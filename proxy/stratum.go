@@ -47,7 +47,7 @@ func (s *ProxyServer) ListenTCP() {
 			continue
 		}
 		n++
-		cs := &Session{conn: conn, ip: ip}
+		cs := &Session{conn: conn, ip: ip, shareCountInv: 0}
 
 		accept <- n
 		go func(cs *Session) {
@@ -209,7 +209,11 @@ func (s *ProxyServer) broadcastNewJobs() {
 		bcast <- n
 
 		go func(cs *Session) {
-			reply[2] = cs.diff
+			reply[2] = cs.diffNextJob
+
+			// update session diff to diffNextJob
+			cs.diff = cs.diffNextJob
+
 			err := cs.pushNewJob(&reply)
 			<-bcast
 			if err != nil {

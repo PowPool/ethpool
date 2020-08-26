@@ -1,5 +1,5 @@
 {
-	"threads": 2,
+	"threads": 4,
 	"coin": "eth",
 	"name": "main",
 
@@ -28,6 +28,12 @@
 			"enabled": false,
 			"maxSubmitRate": 10,
 			"minSubmitRate": 1
+		},
+
+		"diffAdjust":{
+			"enabled": false,
+			"adjustInv": "60s",
+			"expectShareCount": 5
 		},
 
 		"policy": {

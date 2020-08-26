@@ -41,11 +41,15 @@ type Session struct {
 
 	// Stratum
 	sync.Mutex
-	conn          *net.TCPConn
-	login         string
-	id            string
-	lastShareTime int64
-	diff          string
+	conn  *net.TCPConn
+	login string
+	id    string
+
+	//lastShareTime int64
+	diff string
+
+	diffNextJob   string
+	shareCountInv int64
 }
 
 func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
@@ -135,6 +139,22 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 		}
 	}()
 
+	if cfg.Proxy.DiffAdjust.Enabled {
+		diffAdjustIntv := MustParseDuration(cfg.Proxy.DiffAdjust.AdjustInv)
+		diffAdjustTimer := time.NewTimer(diffAdjustIntv)
+		Info.Printf("Difficulty adjust every %v", diffAdjustIntv)
+
+		go func() {
+			for {
+				select {
+				case <-diffAdjustTimer.C:
+					proxy.UpdateAllSessionDiff()
+					diffAdjustTimer.Reset(diffAdjustIntv)
+				}
+			}
+		}()
+	}
+
 	return proxy
 }
 
@@ -198,6 +218,27 @@ func (s *ProxyServer) DumpAllSessionNames() map[string]int {
 	return l
 }
 
+func (s *ProxyServer) UpdateAllSessionDiff() {
+	s.sessionsMu.Lock()
+	defer s.sessionsMu.Unlock()
+
+	for k, _ := range s.sessions {
+		if k.shareCountInv > s.config.Proxy.DiffAdjust.ExpectShareCount*2 {
+			// difficulty up
+			diff := TargetHexToDiff(k.diff).Int64()
+			diff = int64(float64(diff) * 1.2)
+			k.diffNextJob = GetTargetHex(diff)
+			Info.Printf("Address: [%s], Name: : [%s], Diff From [%s] Up to [%s]", k.login, k.id, k.diff, k.diffNextJob)
+		} else if k.shareCountInv < s.config.Proxy.DiffAdjust.ExpectShareCount/2 {
+			// difficulty down
+			diff := TargetHexToDiff(k.diff).Int64()
+			diff = int64(float64(diff) * 0.8)
+			k.diff = GetTargetHex(diff)
+			Info.Printf("Address: [%s], Name: : [%s], Diff From [%s] Down to [%s]", k.login, k.id, k.diff, k.diffNextJob)
+		}
+	}
+}
+
 func (s *ProxyServer) remoteAddr(r *http.Request) string {
 	if s.config.Proxy.BehindReverseProxy {
 		ip := r.Header.Get("X-Forwarded-For")
@@ -219,7 +260,7 @@ func (s *ProxyServer) handleClient(w http.ResponseWriter, r *http.Request, ip st
 	r.Body = http.MaxBytesReader(w, r.Body, s.config.Proxy.LimitBodySize)
 	defer r.Body.Close()
 
-	cs := &Session{ip: ip, enc: json.NewEncoder(w)}
+	cs := &Session{ip: ip, enc: json.NewEncoder(w), shareCountInv: 0}
 	dec := json.NewDecoder(r.Body)
 	for {
 		var req JSONRpcReq

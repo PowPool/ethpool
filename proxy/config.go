@@ -44,8 +44,9 @@ type Proxy struct {
 	MaxFails    int64 `json:"maxFails"`
 	HealthCheck bool  `json:"healthCheck"`
 
-	Stratum           Stratum           `json:"stratum"`
-	DynamicDifficulty DynamicDifficulty `json:"dynamicDifficulty"`
+	Stratum Stratum `json:"stratum"`
+	//DynamicDifficulty DynamicDifficulty `json:"dynamicDifficulty"`
+	DiffAdjust DiffAdjust `json:"diffAdjust"`
 }
 
 type Stratum struct {
@@ -55,10 +56,16 @@ type Stratum struct {
 	MaxConn int    `json:"maxConn"`
 }
 
-type DynamicDifficulty struct {
-	Enabled       bool  `json:"enabled"`
-	MaxSubmitRate int64 `json:"maxSubmitRate"`
-	MinSubmitRate int64 `json:"minSubmitRate"`
+//type DynamicDifficulty struct {
+//	Enabled       bool  `json:"enabled"`
+//	MaxSubmitRate int64 `json:"maxSubmitRate"`
+//	MinSubmitRate int64 `json:"minSubmitRate"`
+//}
+
+type DiffAdjust struct {
+	Enabled          bool   `json:"enabled"`
+	AdjustInv        string `json:"adjustInv"`
+	ExpectShareCount int64  `json:"expectShareCount"`
 }
 
 type Upstream struct {

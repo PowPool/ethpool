@@ -29,6 +29,8 @@ func (s *ProxyServer) handleLoginRPC(cs *Session, params []string, id string) (b
 	cs.login = login
 	cs.id = id
 	cs.diff = s.diff
+	// at first time, diff is the same with diffNextJob
+	cs.diffNextJob = s.diff
 	s.registerSession(cs)
 	Info.Printf("Stratum miner connected %v.%v@%v", login, cs.id, cs.ip)
 	return true, nil
@@ -95,39 +97,39 @@ func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []st
 		return true, &ErrorReply{Code: -1, Message: "High rate of invalid shares"}
 	}
 
-	if s.config.Proxy.DynamicDifficulty.Enabled && cs.lastShareTime != 0 {
-		roundDuration := MakeTimestamp() - cs.lastShareTime
-
-		// 计算当前会话的share提交频率
-		submitRate := (60 * 1000) / roundDuration
-
-		// 抑制过快的提交
-		var factor float64
-		diff := TargetHexToDiff(cs.diff).Int64()
-		switch {
-		case submitRate > s.config.Proxy.DynamicDifficulty.MaxSubmitRate:
-			factor = 1.2
-		case submitRate < s.config.Proxy.DynamicDifficulty.MinSubmitRate:
-			factor = 0.8
-		default:
-			factor = 1.0
-		}
-		diff = int64(float64(diff) * factor)
-		cs.diff = GetTargetHex(diff)
-		Info.Printf("Diff adjust to %d in %s.%s(%s)", diff, login[0:10], id, cs.ip)
-
-		// 下发到矿机
-		reply := []string{t.Header, t.Seed, cs.diff}
-		err := cs.pushNewJob(&reply)
-		if err != nil {
-			Error.Printf("Job transmit error to %v.%v@%v: %v", cs.login, id, cs.ip, err)
-		} else {
-			Error.Printf("Send new job to stratum miner: %v.%v@%v", cs.login, id, cs.ip)
-		}
-	}
-
-	// 记录提交时间戳
-	cs.lastShareTime = MakeTimestamp()
+	//if s.config.Proxy.DynamicDifficulty.Enabled && cs.lastShareTime != 0 {
+	//	roundDuration := MakeTimestamp() - cs.lastShareTime
+	//
+	//	// 计算当前会话的share提交频率
+	//	submitRate := (60 * 1000) / roundDuration
+	//
+	//	// 抑制过快的提交
+	//	var factor float64
+	//	diff := TargetHexToDiff(cs.diff).Int64()
+	//	switch {
+	//	case submitRate > s.config.Proxy.DynamicDifficulty.MaxSubmitRate:
+	//		factor = 1.2
+	//	case submitRate < s.config.Proxy.DynamicDifficulty.MinSubmitRate:
+	//		factor = 0.8
+	//	default:
+	//		factor = 1.0
+	//	}
+	//	diff = int64(float64(diff) * factor)
+	//	cs.diff = GetTargetHex(diff)
+	//	Info.Printf("Diff adjust to %d in %s.%s(%s)", diff, login[0:10], id, cs.ip)
+	//
+	//	// 下发到矿机
+	//	reply := []string{t.Header, t.Seed, cs.diff}
+	//	err := cs.pushNewJob(&reply)
+	//	if err != nil {
+	//		Error.Printf("Job transmit error to %v.%v@%v: %v", cs.login, id, cs.ip, err)
+	//	} else {
+	//		Error.Printf("Send new job to stratum miner: %v.%v@%v", cs.login, id, cs.ip)
+	//	}
+	//}
+	//
+	//// 记录提交时间戳
+	//cs.lastShareTime = MakeTimestamp()
 
 	return true, nil
 }
