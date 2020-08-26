@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/redis.v3"
 
-	. "github.com/sammy007/open-ethereum-pool/util"
+	. "github.com/MiningPool0826/ethpool/util"
 )
 
 type Config struct {

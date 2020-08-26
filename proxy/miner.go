@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	. "github.com/MiningPool0826/ethpool/util"
 	"github.com/ethereum/ethash"
 	"github.com/ethereum/go-ethereum/common"
-	. "github.com/sammy007/open-ethereum-pool/util"
 )
 
 var hasher = ethash.New()

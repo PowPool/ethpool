@@ -11,11 +11,11 @@ import (
 	"time"
 	//"github.com/yvasiyarov/gorelic"
 
-	"github.com/sammy007/open-ethereum-pool/api"
-	"github.com/sammy007/open-ethereum-pool/payouts"
-	"github.com/sammy007/open-ethereum-pool/proxy"
-	"github.com/sammy007/open-ethereum-pool/storage"
-	. "github.com/sammy007/open-ethereum-pool/util"
+	"github.com/MiningPool0826/ethpool/api"
+	"github.com/MiningPool0826/ethpool/payouts"
+	"github.com/MiningPool0826/ethpool/proxy"
+	"github.com/MiningPool0826/ethpool/storage"
+	. "github.com/MiningPool0826/ethpool/util"
 )
 
 var cfg proxy.Config

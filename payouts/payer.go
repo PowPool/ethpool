@@ -9,9 +9,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	"github.com/sammy007/open-ethereum-pool/rpc"
-	"github.com/sammy007/open-ethereum-pool/storage"
-	. "github.com/sammy007/open-ethereum-pool/util"
+	"github.com/MiningPool0826/ethpool/rpc"
+	"github.com/MiningPool0826/ethpool/storage"
+	. "github.com/MiningPool0826/ethpool/util"
 )
 
 const txCheckInterval = 5 * time.Second
