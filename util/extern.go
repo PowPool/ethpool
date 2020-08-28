@@ -1,5 +1,5 @@
 package util
 
 var (
-	AliveSessionNames map[string]int
+	AliveSessionNames map[string]struct{}
 )

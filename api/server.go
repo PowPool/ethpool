@@ -16,27 +16,29 @@ import (
 )
 
 type ApiConfig struct {
-	Enabled              bool   `json:"enabled"`
-	Listen               string `json:"listen"`
-	StatsCollectInterval string `json:"statsCollectInterval"`
-	HashrateWindow       string `json:"hashrateWindow"`
-	HashrateLargeWindow  string `json:"hashrateLargeWindow"`
-	LuckWindow           []int  `json:"luckWindow"`
-	Payments             int64  `json:"payments"`
-	Blocks               int64  `json:"blocks"`
-	PurgeOnly            bool   `json:"purgeOnly"`
-	PurgeInterval        string `json:"purgeInterval"`
+	Enabled               bool   `json:"enabled"`
+	Listen                string `json:"listen"`
+	StatsCollectInterval  string `json:"statsCollectInterval"`
+	HashrateWindow        string `json:"hashrateWindow"`
+	HashrateLargeWindow   string `json:"hashrateLargeWindow"`
+	StatsReservedInterval string `json:"statsReservedInterval"`
+	LuckWindow            []int  `json:"luckWindow"`
+	Payments              int64  `json:"payments"`
+	Blocks                int64  `json:"blocks"`
+	PurgeOnly             bool   `json:"purgeOnly"`
+	PurgeInterval         string `json:"purgeInterval"`
 }
 
 type ApiServer struct {
-	config              *ApiConfig
-	backend             *storage.RedisClient
-	hashrateWindow      time.Duration
-	hashrateLargeWindow time.Duration
-	stats               atomic.Value
-	miners              map[string]*Entry
-	minersMu            sync.RWMutex
-	statsIntv           time.Duration
+	config                *ApiConfig
+	backend               *storage.RedisClient
+	hashrateWindow        time.Duration
+	hashrateLargeWindow   time.Duration
+	statsReservedInterval time.Duration
+	stats                 atomic.Value
+	miners                map[string]*Entry
+	minersMu              sync.RWMutex
+	statsIntv             time.Duration
 }
 
 type Entry struct {
@@ -47,12 +49,15 @@ type Entry struct {
 func NewApiServer(cfg *ApiConfig, backend *storage.RedisClient) *ApiServer {
 	hashrateWindow := MustParseDuration(cfg.HashrateWindow)
 	hashrateLargeWindow := MustParseDuration(cfg.HashrateLargeWindow)
+	statsReservedInterval := MustParseDuration(cfg.StatsReservedInterval)
+
 	return &ApiServer{
-		config:              cfg,
-		backend:             backend,
-		hashrateWindow:      hashrateWindow,
-		hashrateLargeWindow: hashrateLargeWindow,
-		miners:              make(map[string]*Entry),
+		config:                cfg,
+		backend:               backend,
+		hashrateWindow:        hashrateWindow,
+		hashrateLargeWindow:   hashrateLargeWindow,
+		statsReservedInterval: statsReservedInterval,
+		miners:                make(map[string]*Entry),
 	}
 }
 
@@ -78,6 +83,7 @@ func (s *ApiServer) Start() {
 	} else {
 		s.purgeStale()
 		s.collectStats()
+		s.processStats()
 	}
 
 	go func() {
@@ -86,6 +92,7 @@ func (s *ApiServer) Start() {
 			case <-statsTimer.C:
 				if !s.config.PurgeOnly {
 					s.collectStats()
+					s.processStats()
 				}
 				statsTimer.Reset(s.statsIntv)
 			case <-purgeTimer.C:
@@ -123,7 +130,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 func (s *ApiServer) purgeStale() {
 	start := time.Now()
-	total, err := s.backend.FlushStaleStats(s.hashrateWindow, s.hashrateLargeWindow)
+	total, err := s.backend.FlushStaleStats(s.hashrateWindow, s.hashrateLargeWindow, s.statsReservedInterval)
 	if err != nil {
 		Error.Println("Failed to purge stale data from backend:", err)
 	} else {
@@ -147,6 +154,26 @@ func (s *ApiServer) collectStats() {
 	}
 	s.stats.Store(stats)
 	Info.Printf("Stats collection finished %s", time.Since(start))
+}
+
+func (s *ApiServer) processStats() {
+	start := time.Now()
+	t := MakeTimestamp() - 100
+	processStart := t / 60 * 60
+	exist, err := s.backend.PoolHashRateStatsExist(processStart)
+	if err != nil {
+		Error.Printf("Failed to get poolstats [%d] from backend: %v", processStart, err)
+		return
+	}
+
+	if !exist {
+		err := s.backend.CreatePoolHashRateStats(processStart)
+		if err != nil {
+			Error.Printf("Failed to create pool hashrate stats: %v", err)
+			return
+		}
+		Info.Printf("Pool hashrate stats collection finished %s", time.Since(start))
+	}
 }
 
 func (s *ApiServer) StatsIndex(w http.ResponseWriter, r *http.Request) {

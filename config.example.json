@@ -9,9 +9,9 @@
 		"limitHeadersSize": 1024,
 		"limitBodySize": 256,
 		"behindReverseProxy": false,
-		"blockRefreshInterval": "120ms",
+		"blockRefreshInterval": "200ms",
 		"stateUpdateInterval": "3s",
-		"difficulty": 5000000000,
+		"difficulty": 9000000000,
 		"hashrateExpiration": "3h",
 
 		"healthCheck": true,
@@ -63,9 +63,10 @@
 		"purgeOnly": false,
 		"purgeInterval": "10m",
 		"listen": "0.0.0.0:8080",
-		"statsCollectInterval": "5s",
+		"statsCollectInterval": "10s",
 		"hashrateWindow": "30m",
 		"hashrateLargeWindow": "3h",
+		"statsReservedInterval": "24h",
 		"luckWindow": [64, 128, 256],
 		"payments": 30,
 		"blocks": 50

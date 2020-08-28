@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -207,13 +208,13 @@ func (s *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *ProxyServer) DumpAllSessionNames() map[string]int {
+func (s *ProxyServer) DumpAllSessionNames() map[string]struct{} {
 	s.sessionsMu.Lock()
 	defer s.sessionsMu.Unlock()
 
-	l := make(map[string]int)
+	l := make(map[string]struct{})
 	for k, _ := range s.sessions {
-		l[k.login+"."+k.id] = 0
+		l[fmt.Sprintf("%s.%s", k.login, k.id)] = struct{}{}
 	}
 	return l
 }
