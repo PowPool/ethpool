@@ -722,7 +722,7 @@ func (r *RedisClient) CollectStats(smallWindow time.Duration, maxBlocks, maxPaym
 	return stats, nil
 }
 
-func (r *RedisClient) PoolHashRateStatsExist(processStart int64) (bool, error) {
+func (r *RedisClient) AccountsHashRateStatsExist(processStart int64) (bool, error) {
 	n, err := r.client.ZCount(r.formatKey("poolstats"), fmt.Sprint(processStart), fmt.Sprint(processStart)).Result()
 	if err != nil {
 		return false, err
@@ -733,7 +733,7 @@ func (r *RedisClient) PoolHashRateStatsExist(processStart int64) (bool, error) {
 	return true, nil
 }
 
-func (r *RedisClient) CreatePoolHashRateStats(processStart int64) error {
+func (r *RedisClient) CreateAccountsHashRateStats(processStart int64) error {
 	option := redis.ZRangeByScore{Min: fmt.Sprint(processStart), Max: fmt.Sprint("(", processStart+60)}
 	cmd := r.client.ZRangeByScoreWithScores(r.formatKey("hashrate"), option)
 	if cmd.Err() != nil {
@@ -775,6 +775,18 @@ func (r *RedisClient) CreatePoolHashRateStats(processStart int64) error {
 	}
 
 	return nil
+}
+
+func (r *RedisClient) GetAccountsHashRateStats(processStart int64) (string, error) {
+	option := redis.ZRangeByScore{Min: fmt.Sprint(processStart), Max: fmt.Sprint(processStart)}
+	cmd := r.client.ZRangeByScoreWithScores(r.formatKey("poolstats"), option)
+	if cmd.Err() != nil {
+		return "", cmd.Err()
+	}
+	for _, v := range cmd.Val() {
+		return v.Member.(string), nil
+	}
+	return "", nil
 }
 
 func (r *RedisClient) CollectWorkersStats(sWindow, lWindow time.Duration, login string, sessionNames map[string]struct{}) (map[string]interface{}, error) {
