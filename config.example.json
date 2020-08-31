@@ -24,12 +24,6 @@
 			"maxConn": 8192
 		},
 
-		"dynamicDifficulty":{
-			"enabled": false,
-			"maxSubmitRate": 10,
-			"minSubmitRate": 1
-		},
-
 		"diffAdjust":{
 			"enabled": false,
 			"adjustInv": "60s",
@@ -94,7 +88,7 @@
 	},
 
 	"unlocker": {
-		"enabled": false,
+		"enabled": true,
 		"poolFee": 1.0,
 		"poolFeeAddress": "",
 		"donate": false,
@@ -102,7 +96,7 @@
 		"immatureDepth": 20,
 		"keepTxFees": false,
 		"interval": "10m",
-		"daemon": "http://192.168.1.121:60015",
+		"daemon": "http://172.24.146.34:12001",
 		"timeout": "10s"
 	},
 
@@ -110,7 +104,7 @@
 		"enabled": false,
 		"requirePeers": 25,
 		"interval": "120m",
-		"daemon": "http://192.168.1.121:60015",
+		"daemon": "http://172.24.146.34:12001",
 		"timeout": "10s",
 		"address": "0x0",
 		"gas": "21000",
