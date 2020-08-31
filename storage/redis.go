@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -14,10 +13,11 @@ import (
 )
 
 type Config struct {
-	Endpoint string `json:"endpoint"`
-	Password string `json:"password"`
-	Database int64  `json:"database"`
-	PoolSize int    `json:"poolSize"`
+	Endpoint          string `json:"endpoint"`
+	PasswordEncrypted string `json:"passwordEncrypted"`
+	Password          string `json:"-"`
+	Database          int64  `json:"database"`
+	PoolSize          int    `json:"poolSize"`
 }
 
 type RedisClient struct {
@@ -624,7 +624,7 @@ func convertStringMap(m map[string]string) map[string]interface{} {
 }
 
 // WARNING: Must run it periodically to flush out of window hashrate entries
-func (r *RedisClient) FlushStaleStats(window, largeWindow, statsReservedInv time.Duration) (int64, error) {
+func (r *RedisClient) FlushStaleStats(window, largeWindow time.Duration) (int64, error) {
 	now := MakeTimestamp() / 1000
 	max := fmt.Sprint("(", now-int64(window/time.Second))
 	total, err := r.client.ZRemRangeByScore(r.formatKey("hashrate"), "-inf", max).Result()
@@ -658,13 +658,6 @@ func (r *RedisClient) FlushStaleStats(window, largeWindow, statsReservedInv time
 			break
 		}
 	}
-
-	max = fmt.Sprint("(", now-int64(statsReservedInv/time.Second))
-	n, err := r.client.ZRemRangeByScore(r.formatKey("poolstats"), "-inf", max).Result()
-	if err != nil {
-		return total, err
-	}
-	total += n
 
 	return total, nil
 }
@@ -720,73 +713,6 @@ func (r *RedisClient) CollectStats(smallWindow time.Duration, maxBlocks, maxPaym
 	stats["minersTotal"] = len(miners)
 	stats["hashrate"] = totalHashrate
 	return stats, nil
-}
-
-func (r *RedisClient) AccountsHashRateStatsExist(processStart int64) (bool, error) {
-	n, err := r.client.ZCount(r.formatKey("poolstats"), fmt.Sprint(processStart), fmt.Sprint(processStart)).Result()
-	if err != nil {
-		return false, err
-	}
-	if n == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (r *RedisClient) CreateAccountsHashRateStats(processStart int64) error {
-	option := redis.ZRangeByScore{Min: fmt.Sprint(processStart), Max: fmt.Sprint("(", processStart+60)}
-	cmd := r.client.ZRangeByScoreWithScores(r.formatKey("hashrate"), option)
-	if cmd.Err() != nil {
-		return cmd.Err()
-	}
-
-	hashRateStatsMap := make(map[string]HashRateStatsData)
-	for _, v := range cmd.Val() {
-		// "diff:login:id:ms"
-		fields := strings.Split(v.Member.(string), ":")
-		login := fields[1]
-		id := fields[2]
-		k := fmt.Sprintf("%s.%s", login, id)
-
-		v, ok := hashRateStatsMap[k]
-		if ok {
-			v.SharesCount += 1
-			diff, _ := strconv.ParseInt(fields[0], 10, 64)
-			v.TotalWorks += uint64(diff)
-			hashRateStatsMap[k] = v
-		} else {
-			v := HashRateStatsData{}
-			v.SharesCount = 1
-			diff, _ := strconv.ParseInt(fields[0], 10, 64)
-			v.TotalWorks = uint64(diff)
-			hashRateStatsMap[k] = v
-		}
-	}
-	resBytes, err := json.Marshal(hashRateStatsMap)
-	if err != nil {
-		return err
-	}
-
-	resStr := string(resBytes)
-
-	_, err = r.client.ZAdd(r.formatKey("poolstats"), redis.Z{Score: float64(processStart), Member: resStr}).Result()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *RedisClient) GetAccountsHashRateStats(processStart int64) (string, error) {
-	option := redis.ZRangeByScore{Min: fmt.Sprint(processStart), Max: fmt.Sprint(processStart)}
-	cmd := r.client.ZRangeByScoreWithScores(r.formatKey("poolstats"), option)
-	if cmd.Err() != nil {
-		return "", cmd.Err()
-	}
-	for _, v := range cmd.Val() {
-		return v.Member.(string), nil
-	}
-	return "", nil
 }
 
 func (r *RedisClient) CollectWorkersStats(sWindow, lWindow time.Duration, login string, sessionNames map[string]struct{}) (map[string]interface{}, error) {

@@ -8,11 +8,13 @@ import (
 )
 
 type Config struct {
-	Name                  string        `json:"name"`
-	Proxy                 Proxy         `json:"proxy"`
-	Api                   api.ApiConfig `json:"api"`
-	Upstream              []Upstream    `json:"upstream"`
-	UpstreamCheckInterval string        `json:"upstreamCheckInterval"`
+	Name                      string        `json:"name"`
+	Proxy                     Proxy         `json:"proxy"`
+	Api                       api.ApiConfig `json:"api"`
+	Upstream                  []Upstream    `json:"upstream"`
+	UpstreamCheckInterval     string        `json:"upstreamCheckInterval"`
+	UpstreamCoinBaseEncrypted string        `json:"upstreamCoinBaseEncrypted"`
+	UpstreamCoinBase          string        `json:"-"`
 
 	Threads int `json:"threads"`
 

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -31,15 +30,14 @@ type ApiConfig struct {
 }
 
 type ApiServer struct {
-	config                *ApiConfig
-	backend               *storage.RedisClient
-	hashrateWindow        time.Duration
-	hashrateLargeWindow   time.Duration
-	statsReservedInterval time.Duration
-	stats                 atomic.Value
-	miners                map[string]*Entry
-	minersMu              sync.RWMutex
-	statsIntv             time.Duration
+	config              *ApiConfig
+	backend             *storage.RedisClient
+	hashrateWindow      time.Duration
+	hashrateLargeWindow time.Duration
+	stats               atomic.Value
+	miners              map[string]*Entry
+	minersMu            sync.RWMutex
+	statsIntv           time.Duration
 }
 
 type Entry struct {
@@ -50,15 +48,13 @@ type Entry struct {
 func NewApiServer(cfg *ApiConfig, backend *storage.RedisClient) *ApiServer {
 	hashrateWindow := MustParseDuration(cfg.HashrateWindow)
 	hashrateLargeWindow := MustParseDuration(cfg.HashrateLargeWindow)
-	statsReservedInterval := MustParseDuration(cfg.StatsReservedInterval)
 
 	return &ApiServer{
-		config:                cfg,
-		backend:               backend,
-		hashrateWindow:        hashrateWindow,
-		hashrateLargeWindow:   hashrateLargeWindow,
-		statsReservedInterval: statsReservedInterval,
-		miners:                make(map[string]*Entry),
+		config:              cfg,
+		backend:             backend,
+		hashrateWindow:      hashrateWindow,
+		hashrateLargeWindow: hashrateLargeWindow,
+		miners:              make(map[string]*Entry),
 	}
 }
 
@@ -84,7 +80,6 @@ func (s *ApiServer) Start() {
 	} else {
 		s.purgeStale()
 		s.collectStats()
-		s.processStats()
 	}
 
 	go func() {
@@ -93,7 +88,6 @@ func (s *ApiServer) Start() {
 			case <-statsTimer.C:
 				if !s.config.PurgeOnly {
 					s.collectStats()
-					s.processStats()
 				}
 				statsTimer.Reset(s.statsIntv)
 			case <-purgeTimer.C:
@@ -115,7 +109,6 @@ func (s *ApiServer) listen() {
 	r.HandleFunc("/api/blocks", s.BlocksIndex)
 	r.HandleFunc("/api/payments", s.PaymentsIndex)
 	r.HandleFunc("/api/accounts/{login:0x[0-9a-fA-F]{40}}", s.AccountIndex)
-	r.HandleFunc("/api/pow-stats/{timestamp:[0-9]{10}}", s.AccountsHashRateStatsIndex)
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 	err := http.ListenAndServe(s.config.Listen, r)
 	if err != nil {
@@ -132,7 +125,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 func (s *ApiServer) purgeStale() {
 	start := time.Now()
-	total, err := s.backend.FlushStaleStats(s.hashrateWindow, s.hashrateLargeWindow, s.statsReservedInterval)
+	total, err := s.backend.FlushStaleStats(s.hashrateWindow, s.hashrateLargeWindow)
 	if err != nil {
 		Error.Println("Failed to purge stale data from backend:", err)
 	} else {
@@ -156,26 +149,6 @@ func (s *ApiServer) collectStats() {
 	}
 	s.stats.Store(stats)
 	Info.Printf("Stats collection finished %s", time.Since(start))
-}
-
-func (s *ApiServer) processStats() {
-	start := time.Now()
-	t := MakeTimestamp() - 100
-	processStart := t / 60 * 60
-	exist, err := s.backend.AccountsHashRateStatsExist(processStart)
-	if err != nil {
-		Error.Printf("Failed to get accounts hashrate stats [%d] from backend: %v", processStart, err)
-		return
-	}
-
-	if !exist {
-		err := s.backend.CreateAccountsHashRateStats(processStart)
-		if err != nil {
-			Error.Printf("Failed to create accounts hashrate stats: %v", err)
-			return
-		}
-		Info.Printf("Accounts hashrate stats collection finished %s", time.Since(start))
-	}
 }
 
 func (s *ApiServer) StatsIndex(w http.ResponseWriter, r *http.Request) {
@@ -322,32 +295,6 @@ func (s *ApiServer) AccountIndex(w http.ResponseWriter, r *http.Request) {
 	err := json.NewEncoder(w).Encode(reply.stats)
 	if err != nil {
 		Error.Println("Error serializing API response: ", err)
-	}
-}
-
-func (s *ApiServer) AccountsHashRateStatsIndex(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Cache-Control", "no-cache")
-
-	timestamp, err := strconv.ParseInt(mux.Vars(r)["timestamp"], 10, 64)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		Error.Printf("Failed to ParseInt parameter timestamp: %v", err)
-		return
-	}
-
-	retStr, err := s.backend.GetAccountsHashRateStats(timestamp)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		Error.Printf("Failed to GetAccountsHashRateStats: %v", err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte(retStr))
-	if err != nil {
-		Error.Println("Error send response: ", err)
 	}
 }
 

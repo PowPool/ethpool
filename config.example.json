@@ -60,13 +60,13 @@
 		"statsCollectInterval": "10s",
 		"hashrateWindow": "30m",
 		"hashrateLargeWindow": "3h",
-		"statsReservedInterval": "24h",
 		"luckWindow": [64, 128, 256],
 		"payments": 30,
 		"blocks": 50
 	},
 
 	"upstreamCheckInterval": "5s",
+	"upstreamCoinBaseEncrypted": "bg2Z2F+OA6LTR5VQjsOiLOH2YqSiFbETBQWlZ25nt51UsZrrRqWSvWJT4yX6Oz5r",
 	"upstream": [
 		{
 			"name": "main",
@@ -84,7 +84,7 @@
 		"endpoint": "127.0.0.1:6379",
 		"poolSize": 10,
 		"database": 0,
-		"password": ""
+		"passwordEncrypted": "nuaXMECKl3fLIRwzJyKXHA=="
 	},
 
 	"unlocker": {

@@ -4,10 +4,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"syscall"
 	"time"
 	//"github.com/yvasiyarov/gorelic"
 
@@ -16,6 +20,7 @@ import (
 	"github.com/MiningPool0826/ethpool/proxy"
 	"github.com/MiningPool0826/ethpool/storage"
 	. "github.com/MiningPool0826/ethpool/util"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var cfg proxy.Config
@@ -71,6 +76,35 @@ func readConfig(cfg *proxy.Config) {
 	}
 }
 
+func readSecurityPass() ([]byte, error) {
+	fmt.Print("Enter Security Password: ")
+	SecurityPassBytes, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err == nil {
+		return nil, err
+	}
+	return SecurityPassBytes, nil
+}
+
+func decryptPoolConfigure(cfg *proxy.Config, passBytes []byte) error {
+	b, err := Ae64Decode(cfg.UpstreamCoinBaseEncrypted, passBytes)
+	if err != nil {
+		return err
+	}
+	cfg.UpstreamCoinBase = strings.ToLower(string(b))
+	// check address
+	if !IsValidHexAddress(cfg.UpstreamCoinBase) {
+		return errors.New("decryptPoolConfigure: IsValidHexAddress")
+	}
+
+	b, err = Ae64Decode(cfg.Redis.PasswordEncrypted, passBytes)
+	if err != nil {
+		return err
+	}
+	cfg.Redis.Password = string(b)
+
+	return nil
+}
+
 func main() {
 	// init log file
 	_ = os.Mkdir("logs", os.ModePerm)
@@ -89,6 +123,16 @@ func main() {
 	}
 
 	//startNewrelic()
+
+	secPassBytes, err := readSecurityPass()
+	if err != nil {
+		Error.Fatal("Read Security Password error: ", err.Error())
+	}
+
+	err = decryptPoolConfigure(&cfg, secPassBytes)
+	if err != nil {
+		Error.Fatal("Decrypt Pool Configure error: ", err.Error())
+	}
 
 	backend = storage.NewRedisClient(&cfg.Redis, cfg.Coin)
 	pong, err := backend.Check()

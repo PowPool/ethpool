@@ -105,7 +105,7 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 		for {
 			select {
 			case <-checkTimer.C:
-				proxy.checkUpstreams()
+				proxy.checkUpstreams(cfg.UpstreamCoinBase)
 				checkTimer.Reset(checkIntv)
 			}
 		}
@@ -180,7 +180,7 @@ func (s *ProxyServer) rpc() *rpc.RPCClient {
 	return s.upstreams[i]
 }
 
-func (s *ProxyServer) checkUpstreams() {
+func (s *ProxyServer) checkUpstreams(coinBase string) {
 	candidate := int32(0)
 	backup := false
 
@@ -188,6 +188,13 @@ func (s *ProxyServer) checkUpstreams() {
 		if v.Check() && !backup {
 			candidate = int32(i)
 			backup = true
+		}
+
+		walletCoinBase, err := v.CoinBase()
+		if err == nil {
+			if strings.ToLower(walletCoinBase) != strings.ToLower(coinBase) {
+				Error.Fatal("Invalid Wallet CoinBase!")
+			}
 		}
 	}
 

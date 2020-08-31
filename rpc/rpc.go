@@ -97,6 +97,19 @@ func (r *RPCClient) GetWork() ([]string, error) {
 	return reply, err
 }
 
+func (r *RPCClient) GetCoinBase() (string, error) {
+	rpcResp, err := r.doPost(r.Url, "eth_coinbase", []string{})
+	if err != nil {
+		return "", err
+	}
+	var reply string
+	err = json.Unmarshal(*rpcResp.Result, &reply)
+	if err != nil {
+		return "", err
+	}
+	return reply, nil
+}
+
 func (r *RPCClient) GetPendingBlock() (*GetBlockReplyPart, error) {
 	rpcResp, err := r.doPost(r.Url, "eth_getBlockByNumber", []interface{}{"pending", false})
 	if err != nil {
@@ -231,6 +244,10 @@ func (r *RPCClient) SendTransaction(from, to, gas, gasPrice, value string, autoG
 		err = errors.New("transaction is not yet available")
 	}
 	return reply, err
+}
+
+func (r *RPCClient) CoinBase() (string, error) {
+	return r.GetCoinBase()
 }
 
 func (r *RPCClient) doPost(url string, method string, params interface{}) (*JSONRpcResp, error) {
