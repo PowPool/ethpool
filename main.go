@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -117,6 +118,39 @@ func decryptPoolConfigure(cfg *proxy.Config, passBytes []byte) error {
 	return nil
 }
 
+func getDeviceIPs() (map[string]struct{}, error) {
+	ipAddrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, err
+	}
+
+	DeviceIPs := make(map[string]struct{})
+	for _, addr := range ipAddrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ip4 := ipNet.IP.To4(); ip4 != nil {
+				DeviceIPs[ip4.String()] = struct{}{}
+			}
+		}
+	}
+	return DeviceIPs, nil
+}
+
+func initPeerName(cfg *proxy.Config) error {
+	deviceIPs, err := getDeviceIPs()
+	if err != nil {
+		return err
+	}
+
+	for _, c := range cfg.Cluster {
+		_, ok := deviceIPs[c.NodeIp]
+		if ok {
+			cfg.Name = c.NodeName
+			return nil
+		}
+	}
+	return errors.New("local Node is not in the Pool cluster")
+}
+
 func main() {
 	// init log file
 	_ = os.Mkdir("logs", os.ModePerm)
@@ -129,7 +163,11 @@ func main() {
 	readConfig(&cfg)
 	rand.Seed(time.Now().UnixNano())
 
-	// TODO
+	err := initPeerName(&cfg)
+	if err != nil {
+		Error.Fatal("initPeerName error: ", err.Error())
+	}
+	Info.Println("Init Peer Name as:", cfg.Name)
 
 	if cfg.Threads > 0 {
 		runtime.GOMAXPROCS(cfg.Threads)

@@ -22,6 +22,15 @@ func (s *ProxyServer) processShare(login, id, ip string, shareDiff int64, t *Blo
 	if !ok {
 		Error.Printf("Stale share from %v.%v@%v", login, id, ip)
 		ShareLog.Printf("Stale share from %v.%v@%v", login, id, ip)
+
+		ms := MakeTimestamp()
+		ts := ms / 1000
+
+		err := s.backend.WriteInvalidShare(ms, ts, login, id, shareDiff)
+		if err != nil {
+			Error.Println("Failed to insert invalid share data into backend:", err)
+		}
+
 		return false, false
 	}
 
@@ -42,6 +51,14 @@ func (s *ProxyServer) processShare(login, id, ip string, shareDiff int64, t *Blo
 	}
 
 	if !hasher.Verify(share) {
+		ms := MakeTimestamp()
+		ts := ms / 1000
+
+		err := s.backend.WriteRejectShare(ms, ts, login, id, shareDiff)
+		if err != nil {
+			Error.Println("Failed to insert reject share data into backend:", err)
+		}
+
 		return false, false
 	}
 
@@ -73,6 +90,13 @@ func (s *ProxyServer) processShare(login, id, ip string, shareDiff int64, t *Blo
 	} else {
 		exist, err := s.backend.WriteShare(login, id, params, shareDiff, h.height, s.hashrateExpiration)
 		if exist {
+			ms := MakeTimestamp()
+			ts := ms / 1000
+
+			err := s.backend.WriteInvalidShare(ms, ts, login, id, shareDiff)
+			if err != nil {
+				Error.Println("Failed to insert invalid share data into backend:", err)
+			}
 			return true, false
 		}
 		if err != nil {

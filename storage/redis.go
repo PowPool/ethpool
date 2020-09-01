@@ -189,18 +189,35 @@ func (r *RedisClient) WriteShare(login, id string, params []string, diff int64, 
 	if exist {
 		return true, nil
 	}
+
 	tx := r.client.Multi()
 	defer tx.Close()
 
-	ms := MakeTimestamp()
-	ts := ms / 1000
-
 	_, err = tx.Exec(func() error {
+		ms := MakeTimestamp()
+		ts := ms / 1000
+
 		r.writeShare(tx, ms, ts, login, id, diff, window)
 		tx.HIncrBy(r.formatKey("stats"), "roundShares", diff)
 		return nil
 	})
 	return false, err
+}
+
+func (r *RedisClient) WriteInvalidShare(ms, ts int64, login, id string, diff int64) error {
+	cmd := r.client.ZAdd(r.formatKey("invalidhashrate"), redis.Z{Score: float64(ts), Member: join(diff, login, id, ms)})
+	if cmd.Err() != nil {
+		return cmd.Err()
+	}
+	return nil
+}
+
+func (r *RedisClient) WriteRejectShare(ms, ts int64, login, id string, diff int64) error {
+	cmd := r.client.ZAdd(r.formatKey("rejecthashrate"), redis.Z{Score: float64(ts), Member: join(diff, login, id, ms)})
+	if cmd.Err() != nil {
+		return cmd.Err()
+	}
+	return nil
 }
 
 func (r *RedisClient) WriteBlock(login, id string, params []string, diff, roundDiff int64, height uint64, window time.Duration) (bool, error) {
@@ -631,6 +648,18 @@ func (r *RedisClient) FlushStaleStats(window, largeWindow time.Duration) (int64,
 	if err != nil {
 		return total, err
 	}
+
+	n, err := r.client.ZRemRangeByScore(r.formatKey("invalidhashrate"), "-inf", max).Result()
+	if err != nil {
+		return total, err
+	}
+	total += n
+
+	n, err = r.client.ZRemRangeByScore(r.formatKey("rejecthashrate"), "-inf", max).Result()
+	if err != nil {
+		return total, err
+	}
+	total += n
 
 	var c int64
 	miners := make(map[string]struct{})

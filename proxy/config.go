@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	Name                      string        `json:"name"`
+	Name                      string        `json:"-"`
+	Cluster                   []ClusterNode `json:"cluster"`
 	Proxy                     Proxy         `json:"proxy"`
 	Api                       api.ApiConfig `json:"api"`
 	Upstream                  []Upstream    `json:"upstream"`
@@ -67,4 +68,9 @@ type Upstream struct {
 	Name    string `json:"name"`
 	Url     string `json:"url"`
 	Timeout string `json:"timeout"`
+}
+
+type ClusterNode struct {
+	NodeName string `json:"nodeName"`
+	NodeIp   string `json:"nodeIp"`
 }
