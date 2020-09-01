@@ -75,6 +75,13 @@ func (s *ProxyServer) processShare(login, id, ip string, shareDiff int64, t *Blo
 			s.fetchBlockTemplate()
 			exist, err := s.backend.WriteBlock(login, id, params, shareDiff, h.diff.Int64(), h.height, s.hashrateExpiration)
 			if exist {
+				ms := MakeTimestamp()
+				ts := ms / 1000
+
+				err := s.backend.WriteInvalidShare(ms, ts, login, id, shareDiff)
+				if err != nil {
+					Error.Println("Failed to insert invalid share data into backend:", err)
+				}
 				return true, false
 			}
 			if err != nil {
