@@ -77,12 +77,24 @@ func readConfig(cfg *proxy.Config) {
 }
 
 func readSecurityPass() ([]byte, error) {
-	fmt.Print("Enter Security Password: ")
-	SecurityPassBytes, err := terminal.ReadPassword(int(syscall.Stdin))
-	if err == nil {
+	fmt.Printf("Enter Security Password: ")
+	var fd int
+	if terminal.IsTerminal(int(syscall.Stdin)) {
+		fd = int(syscall.Stdin)
+	} else {
+		tty, err := os.Open("/dev/tty")
+		if err != nil {
+			return nil, errors.New("error allocating terminal")
+		}
+		defer tty.Close()
+		fd = int(tty.Fd())
+	}
+
+	SecurityPass, err := terminal.ReadPassword(fd)
+	if err != nil {
 		return nil, err
 	}
-	return SecurityPassBytes, nil
+	return SecurityPass, nil
 }
 
 func decryptPoolConfigure(cfg *proxy.Config, passBytes []byte) error {
@@ -116,6 +128,8 @@ func main() {
 
 	readConfig(&cfg)
 	rand.Seed(time.Now().UnixNano())
+
+	// TODO
 
 	if cfg.Threads > 0 {
 		runtime.GOMAXPROCS(cfg.Threads)
