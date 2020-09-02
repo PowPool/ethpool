@@ -58,8 +58,7 @@ func (s *ProxyServer) handleTCPSubmitRPC(cs *Session, id string, params []string
 
 func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []string) (bool, *ErrorReply) {
 	if !workerPattern.MatchString(id) {
-		Debug.Printf("handleSubmitRPC: id is not match of workerPattern, id: %s", id)
-		id = "0"
+		id = "eth1.0"
 	}
 	if len(params) != 3 {
 		s.policy.ApplyMalformedPolicy(cs.ip)
