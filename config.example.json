@@ -91,10 +91,10 @@
 	],
 
 	"redis": {
-		"endpoint": "127.0.0.1:6379",
+		"endpoint": "r-2vc5ktn9a57ddvvo6r.redis.cn-chengdu.rds.aliyuncs.com:6379",
 		"poolSize": 10,
 		"database": 0,
-		"passwordEncrypted": "nuaXMECKl3fLIRwzJyKXHA=="
+		"passwordEncrypted": "/kvkPvYSmDxsD6QDoQLiuybez+aR7hJRILs/jmmrNWd7lwDTfUZtDVmRdYTell6itQy/dlvUb9v8PfGwnxCb8g=="
 	},
 
 	"unlocker": {
