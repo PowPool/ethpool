@@ -38,6 +38,8 @@ func (s *ProxyServer) ListenTCP() {
 		if err != nil {
 			continue
 		}
+		Info.Println("Accept Stratum TCP Connection from: ", conn)
+
 		_ = conn.SetKeepAlive(true)
 
 		ip, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
