@@ -744,7 +744,7 @@ func (r *RedisClient) CollectStats(smallWindow time.Duration, maxBlocks, maxPaym
 	return stats, nil
 }
 
-func (r *RedisClient) CollectWorkersStats(sWindow, lWindow time.Duration, login string, sessionNames map[string]struct{}) (map[string]interface{}, error) {
+func (r *RedisClient) CollectWorkersStats(sWindow, lWindow time.Duration, login string) (map[string]interface{}, error) {
 	smallWindow := int64(sWindow / time.Second)
 	largeWindow := int64(lWindow / time.Second)
 	stats := make(map[string]interface{})
@@ -787,23 +787,6 @@ func (r *RedisClient) CollectWorkersStats(sWindow, lWindow time.Duration, login 
 			boundary = largeWindow
 		}
 		worker.TotalHR = worker.TotalHR / boundary
-
-		//if len(sessionNames) != 0 {
-		//	_, ok := sessionNames[fmt.Sprintf("%s.%s", login, id)]
-		//	if !ok {
-		//		worker.Offline = true
-		//		offline++
-		//	} else {
-		//		online++
-		//	}
-		//} else {
-		//	if worker.LastBeat < (now - smallWindow/2) {
-		//		worker.Offline = true
-		//		offline++
-		//	} else {
-		//		online++
-		//	}
-		//}
 
 		if worker.LastBeat < (now - smallWindow/2) {
 			worker.Offline = true
