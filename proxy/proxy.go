@@ -88,8 +88,8 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 	stateUpdateIntv := MustParseDuration(cfg.Proxy.StateUpdateInterval)
 	stateUpdateTimer := time.NewTimer(stateUpdateIntv)
 
-	sessionIntv := MustParseDuration("1s")
-	sessionTimer := time.NewTimer(sessionIntv)
+	//sessionIntv := MustParseDuration("1s")
+	//sessionTimer := time.NewTimer(sessionIntv)
 
 	go func() {
 		for {
@@ -130,15 +130,15 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 		}
 	}()
 
-	go func() {
-		for {
-			select {
-			case <-sessionTimer.C:
-				AliveSessionNames = proxy.DumpAllSessionNames()
-				sessionTimer.Reset(sessionIntv)
-			}
-		}
-	}()
+	//go func() {
+	//	for {
+	//		select {
+	//		case <-sessionTimer.C:
+	//			AliveSessionNames = proxy.DumpAllSessionNames()
+	//			sessionTimer.Reset(sessionIntv)
+	//		}
+	//	}
+	//}()
 
 	if cfg.Proxy.DiffAdjust.Enabled {
 		diffAdjustIntv := MustParseDuration(cfg.Proxy.DiffAdjust.AdjustInv)

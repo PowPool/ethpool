@@ -152,16 +152,16 @@ func initPeerName(cfg *proxy.Config) error {
 }
 
 func main() {
+	readConfig(&cfg)
+	rand.Seed(time.Now().UnixNano())
+
 	// init log file
 	_ = os.Mkdir("logs", os.ModePerm)
 	iLogFile := "logs/info.log"
 	eLogFile := "logs/error.log"
 	sLogFile := "logs/share.log"
 	bLogFile := "logs/block.log"
-	InitLog(iLogFile, eLogFile, sLogFile, bLogFile)
-
-	readConfig(&cfg)
-	rand.Seed(time.Now().UnixNano())
+	InitLog(iLogFile, eLogFile, sLogFile, bLogFile, cfg.Log.LogSetLevel)
 
 	err := initPeerName(&cfg)
 	if err != nil {

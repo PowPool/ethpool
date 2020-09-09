@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Name                      string        `json:"-"`
+	Log                       Log           `json:"log"`
 	Cluster                   []ClusterNode `json:"cluster"`
 	Proxy                     Proxy         `json:"proxy"`
 	Api                       api.ApiConfig `json:"api"`
@@ -73,4 +74,8 @@ type Upstream struct {
 type ClusterNode struct {
 	NodeName string `json:"nodeName"`
 	NodeIp   string `json:"nodeIp"`
+}
+
+type Log struct {
+	LogSetLevel int `json:"logSetLevel"`
 }

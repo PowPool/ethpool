@@ -2,6 +2,10 @@
 	"threads": 4,
 	"coin": "eth",
 
+	"log": {
+		"logSetLevel": 10
+	},
+
 	"cluster": [
 		{
 			"nodeName": "pool1",
@@ -80,7 +84,7 @@
 	},
 
 	"upstreamCheckInterval": "5s",
-	"upstreamCoinBaseEncrypted": "bg2Z2F+OA6LTR5VQjsOiLOH2YqSiFbETBQWlZ25nt51UsZrrRqWSvWJT4yX6Oz5r",
+	"upstreamCoinBaseEncrypted": "Az/Ma5+B+Oi3QBHWq7Sm4xdQTHle8XYMdSxhSxBd8EUyzJwvFBDL+afMDVLfn6OT",
 	"upstream": [
 		{
 			"name": "main",
@@ -98,7 +102,7 @@
 		"endpoint": "r-2vc5ktn9a57ddvvo6r.redis.cn-chengdu.rds.aliyuncs.com:6379",
 		"poolSize": 10,
 		"database": 0,
-		"passwordEncrypted": "/kvkPvYSmDxsD6QDoQLiuybez+aR7hJRILs/jmmrNWd7lwDTfUZtDVmRdYTell6itQy/dlvUb9v8PfGwnxCb8g=="
+		"passwordEncrypted": "QJ9FXhVKwayZqT+QyNoBZiKmT6cy9rJWanqoo6ib6K9skCWnWs9IwFQhi4cC6Gj5X+mCGRnzJT1GBbXdbqKS0g=="
 	},
 
 	"unlocker": {

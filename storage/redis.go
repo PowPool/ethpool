@@ -788,21 +788,28 @@ func (r *RedisClient) CollectWorkersStats(sWindow, lWindow time.Duration, login 
 		}
 		worker.TotalHR = worker.TotalHR / boundary
 
-		if len(sessionNames) != 0 {
-			_, ok := sessionNames[fmt.Sprintf("%s.%s", login, id)]
-			if !ok {
-				worker.Offline = true
-				offline++
-			} else {
-				online++
-			}
+		//if len(sessionNames) != 0 {
+		//	_, ok := sessionNames[fmt.Sprintf("%s.%s", login, id)]
+		//	if !ok {
+		//		worker.Offline = true
+		//		offline++
+		//	} else {
+		//		online++
+		//	}
+		//} else {
+		//	if worker.LastBeat < (now - smallWindow/2) {
+		//		worker.Offline = true
+		//		offline++
+		//	} else {
+		//		online++
+		//	}
+		//}
+
+		if worker.LastBeat < (now - smallWindow/2) {
+			worker.Offline = true
+			offline++
 		} else {
-			if worker.LastBeat < (now - smallWindow/2) {
-				worker.Offline = true
-				offline++
-			} else {
-				online++
-			}
+			online++
 		}
 
 		currentHashrate += worker.HR

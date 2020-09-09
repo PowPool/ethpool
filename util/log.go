@@ -7,17 +7,34 @@ import (
 	"os"
 )
 
-var (
-	Debug *log.Logger
-	Info  *log.Logger
-	Warn  *log.Logger
-	Error *log.Logger
+type PoolLogger struct {
+	l        *log.Logger
+	logLevel int
+}
 
-	ShareLog *log.Logger
-	BlockLog *log.Logger
+var (
+	DEBUG = 10
+	INFO  = 20
+	WARN  = 30
+	ERROR = 40
+	SHARE = 100
+	BLOCK = 101
+
+	logSetLevel = 10
+
+	Debug *PoolLogger
+	Info  *PoolLogger
+	Warn  *PoolLogger
+	Error *PoolLogger
+
+	ShareLog *PoolLogger
+	BlockLog *PoolLogger
 )
 
-func InitLog(infoFile, errorFile, shareFile, blockFile string) {
+func InitLog(infoFile, errorFile, shareFile, blockFile string, setLevel int) {
+	logSetLevel = setLevel
+	log.Println("logSetLevel:", setLevel)
+
 	log.Println("infoFile:", infoFile)
 	log.Println("errorFile:", errorFile)
 	log.Println("shareFile:", shareFile)
@@ -42,59 +59,61 @@ func InitLog(infoFile, errorFile, shareFile, blockFile string) {
 		log.Fatalln("Failed to open block log file:", err)
 	}
 
-	Debug = log.New(io.MultiWriter(os.Stdout, infoFd), "[D] ", log.Ldate|log.Lmicroseconds|log.Lshortfile)
-	Info = log.New(io.MultiWriter(os.Stdout, infoFd), "[I] ", log.Ldate|log.Lmicroseconds|log.Lshortfile)
-	Warn = log.New(io.MultiWriter(os.Stderr, infoFd, errorFd), "[W] ", log.Ldate|log.Lmicroseconds|log.Lshortfile)
-	Error = log.New(io.MultiWriter(os.Stderr, infoFd, errorFd), "[E] ", log.Ldate|log.Lmicroseconds|log.Lshortfile)
+	Debug = &PoolLogger{log.New(io.MultiWriter(os.Stdout, infoFd), "[D] ", log.Ldate|log.Lmicroseconds|log.Lshortfile), DEBUG}
+	Info = &PoolLogger{log.New(io.MultiWriter(os.Stdout, infoFd), "[I] ", log.Ldate|log.Lmicroseconds|log.Lshortfile), INFO}
+	Warn = &PoolLogger{log.New(io.MultiWriter(os.Stderr, infoFd, errorFd), "[W] ", log.Ldate|log.Lmicroseconds|log.Lshortfile), WARN}
+	Error = &PoolLogger{log.New(io.MultiWriter(os.Stderr, infoFd, errorFd), "[E] ", log.Ldate|log.Lmicroseconds|log.Lshortfile), ERROR}
 
-	ShareLog = log.New(io.MultiWriter(shareFd, os.Stdout), "[S]", log.Ldate|log.Lmicroseconds)
-	BlockLog = log.New(io.MultiWriter(blockFd, os.Stdout), "[B]", log.Ldate|log.Lmicroseconds)
+	ShareLog = &PoolLogger{log.New(io.MultiWriter(shareFd, os.Stdout), "[S]", log.Ldate|log.Lmicroseconds), SHARE}
+	BlockLog = &PoolLogger{log.New(io.MultiWriter(blockFd, os.Stdout), "[B]", log.Ldate|log.Lmicroseconds), BLOCK}
 }
 
-type Logger struct {
-	l *log.Logger
+func (l *PoolLogger) Print(v ...interface{}) {
+	if logSetLevel <= l.logLevel {
+		_ = l.l.Output(2, fmt.Sprint(v...))
+	}
 }
 
-func (l *Logger) Print(v ...interface{}) {
+func (l *PoolLogger) Println(v ...interface{}) {
+	if logSetLevel <= l.logLevel {
+		_ = l.l.Output(2, fmt.Sprintln(v...))
+	}
+}
+
+func (l *PoolLogger) Printf(format string, v ...interface{}) {
+	if logSetLevel <= l.logLevel {
+		_ = l.l.Output(2, fmt.Sprintf(format, v...))
+	}
+}
+
+func (l *PoolLogger) Fatal(v ...interface{}) {
 	_ = l.l.Output(2, fmt.Sprint(v...))
-}
-
-func (l *Logger) Println(v ...interface{}) {
-	_ = l.l.Output(2, fmt.Sprintln(v...))
-}
-
-func (l *Logger) Printf(format string, v ...interface{}) {
-	_ = l.l.Output(2, fmt.Sprintf(format, v...))
-}
-
-func (l *Logger) Fatal(v ...interface{}) {
-	_ = l.l.Output(2, fmt.Sprint(v...))
 	os.Exit(1)
 }
 
-func (l *Logger) Fatalln(v ...interface{}) {
+func (l *PoolLogger) Fatalln(v ...interface{}) {
 	_ = l.l.Output(2, fmt.Sprintln(v...))
 	os.Exit(1)
 }
 
-func (l *Logger) Fatalf(format string, v ...interface{}) {
+func (l *PoolLogger) Fatalf(format string, v ...interface{}) {
 	_ = l.l.Output(2, fmt.Sprintf(format, v...))
 	os.Exit(1)
 }
 
-func (l *Logger) Panic(v ...interface{}) {
+func (l *PoolLogger) Panic(v ...interface{}) {
 	s := fmt.Sprint(v...)
 	_ = l.l.Output(2, s)
 	panic(s)
 }
 
-func (l *Logger) Panicln(v ...interface{}) {
+func (l *PoolLogger) Panicln(v ...interface{}) {
 	s := fmt.Sprintln(v...)
 	_ = l.l.Output(2, s)
 	panic(s)
 }
 
-func (l *Logger) Panicf(format string, v ...interface{}) {
+func (l *PoolLogger) Panicf(format string, v ...interface{}) {
 	s := fmt.Sprintf(format, v...)
 	_ = l.l.Output(2, s)
 	panic(s)
