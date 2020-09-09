@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -64,16 +65,16 @@ func readConfig(cfg *proxy.Config) {
 		configFileName = os.Args[1]
 	}
 	configFileName, _ = filepath.Abs(configFileName)
-	Info.Printf("Loading config: %v", configFileName)
+	log.Printf("Loading config: %v", configFileName)
 
 	configFile, err := os.Open(configFileName)
 	if err != nil {
-		Error.Fatal("File error: ", err.Error())
+		log.Fatal("File error: ", err.Error())
 	}
 	defer configFile.Close()
 	jsonParser := json.NewDecoder(configFile)
 	if err := jsonParser.Decode(&cfg); err != nil {
-		Error.Fatal("Config error: ", err.Error())
+		log.Fatal("Config error: ", err.Error())
 	}
 }
 
