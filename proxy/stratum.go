@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strings"
 	"time"
 
 	. "github.com/MiningPool0826/ethpool/util"
@@ -93,6 +94,10 @@ func (s *ProxyServer) handleTCPClient(cs *Session) error {
 				Error.Printf("handleTCPClient: Malformed stratum request from %s: %v", cs.ip, err)
 				return err
 			}
+
+			// trim space character for worker
+			req.Worker = strings.Trim(req.Worker, " \t\r\n")
+
 			s.setDeadline(cs.conn)
 			err = cs.handleTCPMessage(s, &req)
 			if err != nil {
