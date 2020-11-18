@@ -37,6 +37,7 @@ type BlockData struct {
 	Nonce          string   `json:"-"`
 	PowHash        string   `json:"-"`
 	MixDigest      string   `json:"-"`
+	Miner          string   `json:"-"`
 	Reward         *big.Int `json:"-"`
 	ExtraReward    *big.Int `json:"-"`
 	ImmatureReward string   `json:"-"`
@@ -77,7 +78,8 @@ func (b *BlockData) key() string {
 		b.Timestamp,
 		b.Difficulty,
 		b.TotalShares,
-		b.Reward)
+		b.Reward,
+		b.Miner)
 }
 
 type Miner struct {
@@ -255,7 +257,7 @@ func (r *RedisClient) WriteBlock(login, id string, params []string, diff, roundD
 			totalShares += n
 		}
 		hashHex := strings.Join(params, ":")
-		s := join(hashHex, ts, roundDiff, totalShares)
+		s := join(hashHex, ts, roundDiff, totalShares, login)
 		cmd := r.client.ZAdd(r.formatKey("blocks", "candidates"), redis.Z{Score: float64(height), Member: s})
 		return false, cmd.Err()
 	}
@@ -876,6 +878,10 @@ func convertCandidateResults(raw *redis.ZSliceCmd) []*BlockData {
 		block.Timestamp, _ = strconv.ParseInt(fields[3], 10, 64)
 		block.Difficulty, _ = strconv.ParseInt(fields[4], 10, 64)
 		block.TotalShares, _ = strconv.ParseInt(fields[5], 10, 64)
+		if len(fields) > 6 {
+			// "nonce:powHash:mixDigest:timestamp:diff:totalShares:miner"
+			block.Miner = fields[6]
+		}
 		block.candidateKey = v.Member.(string)
 		result = append(result, &block)
 	}
@@ -901,6 +907,10 @@ func convertBlockResults(rows ...*redis.ZSliceCmd) []*BlockData {
 			block.TotalShares, _ = strconv.ParseInt(fields[6], 10, 64)
 			block.RewardString = fields[7]
 			block.ImmatureReward = fields[7]
+			if len(fields) > 8 {
+				// "uncleHeight:orphan:nonce:blockHash:timestamp:diff:totalShares:rewardInWei:miner"
+				block.Miner = fields[8]
+			}
 			block.immatureKey = v.Member.(string)
 			result = append(result, &block)
 		}
