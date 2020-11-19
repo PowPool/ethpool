@@ -38,7 +38,7 @@
 		"stratum": {
 			"enabled": true,
 			"listen": "0.0.0.0:8008",
-			"timeout": "60s",
+			"timeout": "300s",
 			"maxConn": 8192
 		},
 
