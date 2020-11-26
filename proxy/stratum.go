@@ -145,6 +145,7 @@ func (cs *Session) handleTCPMessage(s *ProxyServer, req *StratumReq) error {
 	case "eth_submitHashrate":
 		return cs.sendTCPResult(req.Id, true)
 	default:
+		Debug.Println("eth_submitHashrate: %v", req.Params)
 		errReply := s.handleUnknownRPC(cs, req.Method)
 		return cs.sendTCPError(req.Id, errReply)
 	}
