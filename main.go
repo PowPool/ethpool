@@ -192,7 +192,7 @@ func main() {
 	if err != nil {
 		Error.Printf("Can't establish connection to backend: %v", err)
 	} else {
-		Error.Printf("Backend check reply: %v", pong)
+		Info.Printf("Backend check reply: %v", pong)
 	}
 
 	if cfg.Proxy.Enabled {
