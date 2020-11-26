@@ -46,11 +46,12 @@ type Session struct {
 	login string
 	id    string
 
-	//lastShareTime int64
 	diff string
 
 	diffNextJob   string
 	shareCountInv int64
+
+	lastLocalHRSubmitTime int64
 }
 
 func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
@@ -255,7 +256,7 @@ func (s *ProxyServer) handleClient(w http.ResponseWriter, r *http.Request, ip st
 	r.Body = http.MaxBytesReader(w, r.Body, s.config.Proxy.LimitBodySize)
 	defer r.Body.Close()
 
-	cs := &Session{ip: ip, enc: json.NewEncoder(w), shareCountInv: 0}
+	cs := &Session{ip: ip, enc: json.NewEncoder(w), shareCountInv: 0, lastLocalHRSubmitTime: 0}
 	dec := json.NewDecoder(r.Body)
 	for {
 		var req JSONRpcReq

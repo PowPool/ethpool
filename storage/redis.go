@@ -206,6 +206,22 @@ func (r *RedisClient) WriteShare(login, id string, params []string, diff int64, 
 	return false, err
 }
 
+func (r *RedisClient) WriteLocalHashRate(login, id string, hr int64) error {
+	tx := r.client.Multi()
+	defer tx.Close()
+
+	// 2 hours
+	expire := 7200 * time.Second
+
+	_, err := tx.Exec(func() error {
+		tx.HSet(r.formatKey("localhashrate"), join(login, id), strconv.FormatInt(hr, 10))
+		tx.Expire(r.formatKey("localhashrate", join(login, id)), expire)
+		return nil
+	})
+
+	return err
+}
+
 func (r *RedisClient) WriteInvalidShare(ms, ts int64, login, id string, diff int64) error {
 	cmd := r.client.ZAdd(r.formatKey("invalidhashrate"), redis.Z{Score: float64(ts), Member: join(diff, login, id, ms)})
 	if cmd.Err() != nil {

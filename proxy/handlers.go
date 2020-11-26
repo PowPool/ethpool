@@ -56,6 +56,17 @@ func (s *ProxyServer) handleTCPSubmitRPC(cs *Session, id string, params []string
 	return s.handleSubmitRPC(cs, cs.login, id, params)
 }
 
+func (s *ProxyServer) handleTCPSubmitHashrateRPC(cs *Session, id string, params []string) (bool, *ErrorReply) {
+	s.sessionsMu.RLock()
+	_, ok := s.sessions[cs]
+	s.sessionsMu.RUnlock()
+
+	if !ok {
+		return false, &ErrorReply{Code: 25, Message: "Not subscribed"}
+	}
+	return s.handleSubmitHashrateRPC(cs, cs.login, id, params)
+}
+
 func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []string) (bool, *ErrorReply) {
 	if !workerPattern.MatchString(id) {
 		if !workerPattern.MatchString(cs.id) {
@@ -100,6 +111,25 @@ func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []st
 	if !ok {
 		return true, &ErrorReply{Code: -1, Message: "High rate of invalid shares"}
 	}
+
+	return true, nil
+}
+
+func (s *ProxyServer) handleSubmitHashrateRPC(cs *Session, login, id string, params []string) (bool, *ErrorReply) {
+	if !workerPattern.MatchString(id) {
+		if !workerPattern.MatchString(cs.id) {
+			id = "eth1.0"
+		} else {
+			id = cs.id
+		}
+	}
+	if len(params) != 2 {
+		s.policy.ApplyMalformedPolicy(cs.ip)
+		Error.Printf("Malformed params from %s@%s %v", login, cs.ip, params)
+		return false, &ErrorReply{Code: -1, Message: "Invalid params"}
+	}
+
+	_ = s.processLocalHashRate(login, id, params[0])
 
 	return true, nil
 }

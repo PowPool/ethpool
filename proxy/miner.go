@@ -112,3 +112,19 @@ func (s *ProxyServer) processShare(login, id, ip string, shareDiff int64, t *Blo
 	}
 	return false, true
 }
+
+func (s *ProxyServer) processLocalHashRate(login, id, localHRHex string) bool {
+	hr, err := strconv.ParseInt(localHRHex, 10, 64)
+	if err != nil {
+		Error.Printf("processLocalHashRate [%s]: %s", localHRHex, err.Error())
+		return false
+	}
+
+	err = s.backend.WriteLocalHashRate(login, id, hr)
+	if err != nil {
+		Error.Println("Failed to insert local hash rate into backend:", err)
+		return false
+	}
+
+	return true
+}

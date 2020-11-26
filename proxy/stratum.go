@@ -50,7 +50,7 @@ func (s *ProxyServer) ListenTCP() {
 			continue
 		}
 		n++
-		cs := &Session{conn: conn, ip: ip, shareCountInv: 0}
+		cs := &Session{conn: conn, ip: ip, shareCountInv: 0, lastLocalHRSubmitTime: 0}
 
 		accept <- n
 		go func(cs *Session) {
@@ -149,7 +149,10 @@ func (cs *Session) handleTCPMessage(s *ProxyServer, req *StratumReq) error {
 			Error.Println("Malformed stratum request (eth_submitHashrate) params from", cs.ip)
 			return err
 		}
-		Info.Println("eth_submitHashrate: ", strings.Join(params, "|"))
+		if time.Now().Unix()-cs.lastLocalHRSubmitTime > 900 {
+			_, _ = s.handleTCPSubmitHashrateRPC(cs, req.Worker, params)
+			cs.lastLocalHRSubmitTime = time.Now().Unix()
+		}
 		return cs.sendTCPResult(req.Id, true)
 	default:
 
