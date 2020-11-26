@@ -143,7 +143,13 @@ func (cs *Session) handleTCPMessage(s *ProxyServer, req *StratumReq) error {
 		}
 		return cs.sendTCPResult(req.Id, &reply)
 	case "eth_submitHashrate":
-		Info.Println("eth_submitHashrate: %v", req.Params)
+		var params []string
+		err := json.Unmarshal(req.Params, &params)
+		if err != nil {
+			Error.Println("Malformed stratum request (eth_submitHashrate) params from", cs.ip)
+			return err
+		}
+		Info.Println("eth_submitHashrate: ", strings.Join(params, "|"))
 		return cs.sendTCPResult(req.Id, true)
 	default:
 
