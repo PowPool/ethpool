@@ -129,7 +129,10 @@ func (s *ProxyServer) handleSubmitHashrateRPC(cs *Session, login, id string, par
 		return false, &ErrorReply{Code: -1, Message: "Invalid params"}
 	}
 
-	_ = s.processLocalHashRate(login, id, params[0])
+	ok := s.processLocalHashRate(login, id, params[0])
+	if !ok {
+		return false, &ErrorReply{Code: -1, Message: "Process local Hash Rate"}
+	}
 
 	return true, nil
 }

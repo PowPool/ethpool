@@ -114,7 +114,10 @@ func (s *ProxyServer) processShare(login, id, ip string, shareDiff int64, t *Blo
 }
 
 func (s *ProxyServer) processLocalHashRate(login, id, localHRHex string) bool {
-	hr, err := strconv.ParseInt(localHRHex, 10, 64)
+	if localHRHex[0:2] == "0x" {
+		localHRHex = localHRHex[2:]
+	}
+	hr, err := strconv.ParseInt(localHRHex, 16, 64)
 	if err != nil {
 		Error.Printf("processLocalHashRate [%s]: %s", localHRHex, err.Error())
 		return false
