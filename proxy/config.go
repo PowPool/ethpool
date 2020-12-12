@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Name                      string        `json:"-"`
+	LocalIP                   string        `json:"-"`
 	Log                       Log           `json:"log"`
 	Cluster                   []ClusterNode `json:"cluster"`
 	Proxy                     Proxy         `json:"proxy"`
@@ -49,6 +50,7 @@ type Proxy struct {
 	HealthCheck bool  `json:"healthCheck"`
 
 	Stratum    Stratum    `json:"stratum"`
+	StratumVIP StratumVIP `json:"stratumVIP"`
 	DiffAdjust DiffAdjust `json:"diffAdjust"`
 }
 
@@ -57,6 +59,13 @@ type Stratum struct {
 	Listen  string `json:"listen"`
 	Timeout string `json:"timeout"`
 	MaxConn int    `json:"maxConn"`
+}
+
+type StratumVIP struct {
+	Enabled   bool   `json:"enabled"`
+	PortRange string `json:"portRange"`
+	Timeout   string `json:"timeout"`
+	MaxConn   int    `json:"maxConn"`
 }
 
 type DiffAdjust struct {

@@ -42,6 +42,13 @@
 			"maxConn": 8192
 		},
 
+		"stratumVIP": {
+			"enabled": true,
+			"portRange": "27000-27080",
+			"timeout": "300s",
+			"maxConn": 8192
+		},
+
 		"diffAdjust":{
 			"enabled": false,
 			"adjustInv": "60s",

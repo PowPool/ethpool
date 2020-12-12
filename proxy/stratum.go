@@ -16,11 +16,11 @@ const (
 	MaxReqSize = 1024
 )
 
-func (s *ProxyServer) ListenTCP() {
-	timeout := MustParseDuration(s.config.Proxy.Stratum.Timeout)
+func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string, allowMaxConn int) {
+	timeout := MustParseDuration(timeOutStr)
 	s.timeout = timeout
 
-	addr, err := net.ResolveTCPAddr("tcp", s.config.Proxy.Stratum.Listen)
+	addr, err := net.ResolveTCPAddr("tcp", listenEndPoint)
 	if err != nil {
 		Error.Fatalf("Error: %v", err)
 	}
@@ -30,8 +30,8 @@ func (s *ProxyServer) ListenTCP() {
 	}
 	defer server.Close()
 
-	Info.Printf("Stratum listening on %s", s.config.Proxy.Stratum.Listen)
-	var accept = make(chan int, s.config.Proxy.Stratum.MaxConn)
+	Info.Printf("Stratum listening on %s", listenEndPoint)
+	var accept = make(chan int, allowMaxConn)
 	n := 0
 
 	for {
@@ -39,7 +39,7 @@ func (s *ProxyServer) ListenTCP() {
 		if err != nil {
 			continue
 		}
-		Info.Println("Accept Stratum TCP Connection from: ", conn.RemoteAddr().String())
+		Info.Println("Accept Stratum TCP Connection from: %s, to: %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
 
 		_ = conn.SetKeepAlive(true)
 

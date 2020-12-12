@@ -146,6 +146,7 @@ func initPeerName(cfg *proxy.Config) error {
 		_, ok := deviceIPs[c.NodeIp]
 		if ok {
 			cfg.Name = c.NodeName
+			cfg.LocalIP = c.NodeIp
 			return nil
 		}
 	}

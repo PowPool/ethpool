@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -34,6 +35,9 @@ type ProxyServer struct {
 	sessionsMu sync.RWMutex
 	sessions   map[*Session]struct{}
 	timeout    time.Duration
+
+	// login:port => timestamp
+	sessionCaches map[string]int64
 }
 
 type Session struct {
@@ -70,9 +74,33 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 	}
 	Info.Printf("Default upstream: %s => %s", proxy.rpc().Name, proxy.rpc().Url)
 
+	proxy.sessions = make(map[*Session]struct{})
+	proxy.sessionCaches = make(map[string]int64)
 	if cfg.Proxy.Stratum.Enabled {
-		proxy.sessions = make(map[*Session]struct{})
-		go proxy.ListenTCP()
+		go proxy.ListenTCP(cfg.Proxy.Stratum.Listen, cfg.Proxy.Stratum.Timeout, cfg.Proxy.Stratum.MaxConn)
+	}
+
+	if cfg.Proxy.StratumVIP.Enabled {
+		l := strings.Split(cfg.Proxy.StratumVIP.PortRange, "-")
+		if len(l) != 2 {
+			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange")
+		}
+		startPort, err := strconv.Atoi(l[0])
+		if err != nil {
+			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: startPort")
+		}
+		endPort, err := strconv.Atoi(l[1])
+		if err != nil {
+			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: endPort")
+		}
+		if startPort > endPort {
+			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: startPort > endPort")
+		}
+
+		for i := startPort; i <= endPort; i++ {
+			listenEndPoint := fmt.Sprintf("%s:%d", cfg.LocalIP, i)
+			go proxy.ListenTCP(listenEndPoint, cfg.Proxy.StratumVIP.Timeout, cfg.Proxy.StratumVIP.MaxConn)
+		}
 	}
 
 	proxy.fetchBlockTemplate()
@@ -88,6 +116,9 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 
 	stateUpdateIntv := MustParseDuration(cfg.Proxy.StateUpdateInterval)
 	stateUpdateTimer := time.NewTimer(stateUpdateIntv)
+
+	loginPortUpdateIntv := MustParseDuration("30m")
+	loginPortUpdateTimer := time.NewTimer(loginPortUpdateIntv)
 
 	go func() {
 		for {
@@ -143,6 +174,16 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 			}
 		}()
 	}
+
+	go func() {
+		for {
+			select {
+			case <-loginPortUpdateTimer.C:
+				proxy.UpdateAllSessionCache()
+				loginPortUpdateTimer.Reset(loginPortUpdateIntv)
+			}
+		}
+	}()
 
 	return proxy
 }
@@ -231,6 +272,29 @@ func (s *ProxyServer) UpdateAllSessionDiff() {
 			diff = int64(float64(diff) * 0.8)
 			k.diff = GetTargetHex(diff)
 			Info.Printf("Address: [%s], Name: : [%s], Diff From [%s] Down to [%s]", k.login, k.id, k.diff, k.diffNextJob)
+		}
+	}
+}
+
+func (s *ProxyServer) UpdateAllSessionCache() {
+	s.sessionsMu.Lock()
+	defer s.sessionsMu.Unlock()
+
+	for k, _ := range s.sessions {
+		if k.conn == nil {
+			continue
+		}
+		login := k.login
+		_, port, _ := net.SplitHostPort(k.conn.LocalAddr().String())
+		cacheKey := strings.Join([]string{login, port}, ":")
+		cacheValue, ok := s.sessionCaches[cacheKey]
+		if ok && ((time.Now().Unix() - cacheValue) < 1800) {
+			continue
+		}
+		err := s.backend.WriteLoginPort(login, port)
+		if err != nil {
+			Warn.Println("Failed to insert LoginPort data into backend:", err)
+			continue
 		}
 	}
 }
