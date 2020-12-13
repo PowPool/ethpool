@@ -49,8 +49,10 @@ type Proxy struct {
 	MaxFails    int64 `json:"maxFails"`
 	HealthCheck bool  `json:"healthCheck"`
 
-	Stratum    Stratum    `json:"stratum"`
-	StratumVIP StratumVIP `json:"stratumVIP"`
+	Stratum        Stratum    `json:"stratum"`
+	StratumVIP     StratumVIP `json:"stratumVIP"`
+	StratumMaxConn int        `json:"stratumMaxConn"`
+
 	DiffAdjust DiffAdjust `json:"diffAdjust"`
 }
 
@@ -58,14 +60,12 @@ type Stratum struct {
 	Enabled bool   `json:"enabled"`
 	Listen  string `json:"listen"`
 	Timeout string `json:"timeout"`
-	MaxConn int    `json:"maxConn"`
 }
 
 type StratumVIP struct {
 	Enabled   bool   `json:"enabled"`
 	PortRange string `json:"portRange"`
 	Timeout   string `json:"timeout"`
-	MaxConn   int    `json:"maxConn"`
 }
 
 type DiffAdjust struct {

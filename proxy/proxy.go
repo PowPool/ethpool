@@ -37,7 +37,8 @@ type ProxyServer struct {
 	timeout    time.Duration
 
 	// login:port => timestamp
-	sessionCaches map[string]int64
+	sessionCaches     map[string]int64
+	stratumAcceptChan chan int
 }
 
 type Session struct {
@@ -76,8 +77,12 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 
 	proxy.sessions = make(map[*Session]struct{})
 	proxy.sessionCaches = make(map[string]int64)
+	if cfg.Proxy.Stratum.Enabled || cfg.Proxy.StratumVIP.Enabled {
+		proxy.stratumAcceptChan = make(chan int, cfg.Proxy.StratumMaxConn)
+	}
+
 	if cfg.Proxy.Stratum.Enabled {
-		go proxy.ListenTCP(cfg.Proxy.Stratum.Listen, cfg.Proxy.Stratum.Timeout, cfg.Proxy.Stratum.MaxConn)
+		go proxy.ListenTCP(cfg.Proxy.Stratum.Listen, cfg.Proxy.Stratum.Timeout)
 	}
 
 	if cfg.Proxy.StratumVIP.Enabled {
@@ -99,7 +104,7 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 
 		for i := startPort; i <= endPort; i++ {
 			listenEndPoint := fmt.Sprintf("%s:%d", cfg.LocalIP, i)
-			go proxy.ListenTCP(listenEndPoint, cfg.Proxy.StratumVIP.Timeout, cfg.Proxy.StratumVIP.MaxConn)
+			go proxy.ListenTCP(listenEndPoint, cfg.Proxy.StratumVIP.Timeout)
 		}
 	}
 

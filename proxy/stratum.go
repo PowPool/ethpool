@@ -16,7 +16,7 @@ const (
 	MaxReqSize = 1024
 )
 
-func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string, allowMaxConn int) {
+func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string) {
 	timeout := MustParseDuration(timeOutStr)
 	s.timeout = timeout
 
@@ -31,8 +31,6 @@ func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string, allowM
 	defer server.Close()
 
 	Info.Printf("Stratum listening on %s", listenEndPoint)
-	var accept = make(chan int, allowMaxConn)
-	n := 0
 
 	for {
 		conn, err := server.AcceptTCP()
@@ -49,17 +47,17 @@ func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string, allowM
 			_ = conn.Close()
 			continue
 		}
-		n++
+
 		cs := &Session{conn: conn, ip: ip, shareCountInv: 0, lastLocalHRSubmitTime: 0}
 
-		accept <- n
+		s.stratumAcceptChan <- 0
 		go func(cs *Session) {
 			err = s.handleTCPClient(cs)
 			if err != nil {
 				s.removeSession(cs)
 				_ = conn.Close()
 			}
-			<-accept
+			<-s.stratumAcceptChan
 		}(cs)
 	}
 }

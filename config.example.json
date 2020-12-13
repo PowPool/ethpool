@@ -38,16 +38,16 @@
 		"stratum": {
 			"enabled": true,
 			"listen": "0.0.0.0:8008",
-			"timeout": "300s",
-			"maxConn": 8192
+			"timeout": "300s"
 		},
 
 		"stratumVIP": {
 			"enabled": true,
 			"portRange": "27000-27080",
-			"timeout": "300s",
-			"maxConn": 8192
+			"timeout": "300s"
 		},
+
+		"stratumMaxConn": 8192,
 
 		"diffAdjust":{
 			"enabled": false,
