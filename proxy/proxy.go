@@ -296,12 +296,14 @@ func (s *ProxyServer) UpdateAllSessionCache() {
 		if ok && ((time.Now().Unix() - cacheValue) < 1800) {
 			continue
 		}
+		s.sessionCaches[cacheKey] = time.Now().Unix()
 		err := s.backend.WriteLoginPort(login, port)
 		if err != nil {
 			Warn.Println("Failed to insert LoginPort data into backend:", err)
 			continue
 		}
 	}
+	Info.Printf("UpdateAllSessionCache at %d", time.Now().Unix())
 }
 
 func (s *ProxyServer) remoteAddr(r *http.Request) string {
