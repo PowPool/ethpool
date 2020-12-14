@@ -91,7 +91,7 @@
 	},
 
 	"upstreamCheckInterval": "5s",
-	"upstreamCoinBaseEncrypted": "Az/Ma5+B+Oi3QBHWq7Sm4xdQTHle8XYMdSxhSxBd8EUyzJwvFBDL+afMDVLfn6OT",
+	"upstreamCoinBaseEncrypted": "ZoY44jBDaeHCNsvaPzaeVWOLNTODWGJP9GIrM3jGc5QcErmg11SsSuFIyPDnmgte",
 	"upstream": [
 		{
 			"name": "main",
