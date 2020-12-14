@@ -37,7 +37,7 @@ func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string) {
 		if err != nil {
 			continue
 		}
-		Info.Println("Accept Stratum TCP Connection from: %s, to: %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
+		Info.Printf("Accept Stratum TCP Connection from: %s, to: %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
 
 		_ = conn.SetKeepAlive(true)
 
