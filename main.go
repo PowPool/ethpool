@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"syscall"
 	"time"
@@ -219,6 +220,12 @@ func main() {
 	} else {
 		Info.Printf("Backend check reply: %v", pong)
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			Error.Println(string(debug.Stack()))
+		}
+	}()
 
 	if cfg.Proxy.Enabled {
 		go startProxy()
