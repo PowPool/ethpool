@@ -19,20 +19,34 @@ func (s *ProxyServer) handleLoginRPC(cs *Session, params []string, id string) (b
 		return false, &ErrorReply{Code: -1, Message: "Invalid params"}
 	}
 
-	login := strings.ToLower(params[0])
-	if !IsValidHexAddress(login) {
-		return false, &ErrorReply{Code: -1, Message: "Invalid login"}
+	// gminer stratum fixed:
+	strList := strings.Split(params[0], ".")
+	if len(strList) > 1 {
+		login := strings.ToLower(strList[0])
+		if !IsValidHexAddress(login) {
+			return false, &ErrorReply{Code: -1, Message: "Invalid login"}
+		}
+		if !s.policy.ApplyLoginPolicy(login, cs.ip) {
+			return false, &ErrorReply{Code: -1, Message: "You are blacklisted"}
+		}
+		cs.login = login
+		cs.id = params[0][len(login)+1:]
+	} else {
+		login := strings.ToLower(params[0])
+		if !IsValidHexAddress(login) {
+			return false, &ErrorReply{Code: -1, Message: "Invalid login"}
+		}
+		if !s.policy.ApplyLoginPolicy(login, cs.ip) {
+			return false, &ErrorReply{Code: -1, Message: "You are blacklisted"}
+		}
+		cs.login = login
+		cs.id = id
 	}
-	if !s.policy.ApplyLoginPolicy(login, cs.ip) {
-		return false, &ErrorReply{Code: -1, Message: "You are blacklisted"}
-	}
-	cs.login = login
-	cs.id = id
 	cs.diff = s.diff
 	// at first time, diff is the same with diffNextJob
 	cs.diffNextJob = s.diff
 	s.registerSession(cs)
-	Info.Printf("Stratum miner connected %v.%v@%v", login, cs.id, cs.ip)
+	Info.Printf("Stratum miner connected %v.%v@%v", cs.login, cs.id, cs.ip)
 	return true, nil
 }
 
@@ -53,7 +67,10 @@ func (s *ProxyServer) handleTCPSubmitRPC(cs *Session, id string, params []string
 	if !ok {
 		return false, &ErrorReply{Code: 25, Message: "Not subscribed"}
 	}
-	return s.handleSubmitRPC(cs, cs.login, id, params)
+	//return s.handleSubmitRPC(cs, cs.login, id, params)
+
+	// gminer stratum fixed: use worker name in session (login worker name)
+	return s.handleSubmitRPC(cs, cs.login, cs.id, params)
 }
 
 func (s *ProxyServer) handleTCPSubmitHashrateRPC(cs *Session, id string, params []string) (bool, *ErrorReply) {
@@ -64,7 +81,10 @@ func (s *ProxyServer) handleTCPSubmitHashrateRPC(cs *Session, id string, params 
 	if !ok {
 		return false, &ErrorReply{Code: 25, Message: "Not subscribed"}
 	}
-	return s.handleSubmitHashrateRPC(cs, cs.login, id, params)
+	//return s.handleSubmitHashrateRPC(cs, cs.login, id, params)
+
+	// gminer stratum fixed: use worker name in session (login worker name)
+	return s.handleSubmitHashrateRPC(cs, cs.login, cs.id, params)
 }
 
 func (s *ProxyServer) handleSubmitRPC(cs *Session, login, id string, params []string) (bool, *ErrorReply) {
