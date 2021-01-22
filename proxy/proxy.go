@@ -39,6 +39,8 @@ type ProxyServer struct {
 	// login:port => timestamp
 	sessionCaches     map[string]int64
 	stratumAcceptChan chan int
+
+	upstreamsStates []bool
 }
 
 type Session struct {
@@ -66,6 +68,7 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 	policyServer := policy.Start(&cfg.Proxy.Policy, backend)
 
 	proxy := &ProxyServer{config: cfg, backend: backend, policy: policyServer}
+	proxy.upstreamsStates = make([]bool, 0)
 	proxy.diff = GetTargetHex(cfg.Proxy.Difficulty)
 
 	proxy.upstreams = make([]*rpc.RPCClient, len(cfg.Upstream))
@@ -235,6 +238,33 @@ func (s *ProxyServer) checkUpstreams(coinBase string) {
 	if s.upstream != candidate {
 		Info.Printf("Switching to %v upstream", s.upstreams[candidate].Name)
 		atomic.StoreInt32(&s.upstream, candidate)
+	}
+
+	upstreamsAllSick := true
+	for _, v := range s.upstreams {
+		if !v.Sick() {
+			upstreamsAllSick = false
+			break
+		}
+	}
+
+	s.upstreamsStates = append(s.upstreamsStates, upstreamsAllSick)
+	if len(s.upstreamsStates) >= 60 {
+		s.upstreamsStates = s.upstreamsStates[len(s.upstreamsStates)-60 : len(s.upstreamsStates)-1]
+
+		// if all upstreams status were sick in the latest 5 minutes, log and panic
+		sickStatusAllTrue := true
+		for _, v := range s.upstreamsStates {
+			if !v {
+				sickStatusAllTrue = false
+				break
+			}
+		}
+
+		if sickStatusAllTrue {
+			Error.Printf("all upstreams status were sick in the latest 5 minutes")
+			panic("all upstreams status were sick in the latest 5 minutes")
+		}
 	}
 }
 
