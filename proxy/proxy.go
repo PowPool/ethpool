@@ -250,7 +250,7 @@ func (s *ProxyServer) checkUpstreams(coinBase string) {
 
 	s.upstreamsStates = append(s.upstreamsStates, upstreamsAllSick)
 	if len(s.upstreamsStates) >= 60 {
-		s.upstreamsStates = s.upstreamsStates[len(s.upstreamsStates)-60 : len(s.upstreamsStates)-1]
+		s.upstreamsStates = s.upstreamsStates[len(s.upstreamsStates)-60 : len(s.upstreamsStates)]
 
 		// if all upstreams status were sick in the latest 5 minutes, log and panic
 		sickStatusAllTrue := true
