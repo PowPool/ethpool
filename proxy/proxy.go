@@ -262,8 +262,7 @@ func (s *ProxyServer) checkUpstreams(coinBase string) {
 		}
 
 		if sickStatusAllTrue {
-			Error.Printf("all upstreams status were sick in the latest 5 minutes")
-			panic("all upstreams status were sick in the latest 5 minutes")
+			Error.Fatalf("all upstreams status were sick in the latest 5 minutes")
 		}
 	}
 }
