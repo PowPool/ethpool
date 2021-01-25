@@ -252,7 +252,7 @@ func (s *ProxyServer) checkUpstreams(coinBase string) {
 	if len(s.upstreamsStates) >= 60 {
 		s.upstreamsStates = s.upstreamsStates[len(s.upstreamsStates)-60 : len(s.upstreamsStates)]
 
-		// if all upstreams status were sick in the latest 5 minutes, log and panic
+		// sick in the past 5 minutes, log and exit
 		sickStatusAllTrue := true
 		for _, v := range s.upstreamsStates {
 			if !v {
@@ -262,7 +262,7 @@ func (s *ProxyServer) checkUpstreams(coinBase string) {
 		}
 
 		if sickStatusAllTrue {
-			Error.Fatalf("all upstreams status were sick in the latest 5 minutes")
+			Error.Fatal("all upstreams status were sick in the latest 5 minutes")
 		}
 	}
 }
