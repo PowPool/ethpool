@@ -13,11 +13,22 @@ import (
 )
 
 type Config struct {
+	Enabled           bool   `json:"enabled"`
 	Endpoint          string `json:"endpoint"`
 	PasswordEncrypted string `json:"passwordEncrypted"`
 	Password          string `json:"-"`
 	Database          int64  `json:"database"`
 	PoolSize          int    `json:"poolSize"`
+}
+
+type ConfigFailover struct {
+	Enabled           bool     `json:"enabled"`
+	MasterName        string   `json:"masterName"`
+	SentinelEndpoints []string `json:"sentinelEndpoints"`
+	PasswordEncrypted string   `json:"passwordEncrypted"`
+	Password          string   `json:"-"`
+	Database          int64    `json:"database"`
+	PoolSize          int      `json:"poolSize"`
 }
 
 type RedisClient struct {
@@ -100,6 +111,17 @@ func NewRedisClient(cfg *Config, prefix string) *RedisClient {
 		Password: cfg.Password,
 		DB:       cfg.Database,
 		PoolSize: cfg.PoolSize,
+	})
+	return &RedisClient{client: client, prefix: prefix}
+}
+
+func NewRedisFailoverClient(cfg *ConfigFailover, prefix string) *RedisClient {
+	client := redis.NewFailoverClient(&redis.FailoverOptions{
+		MasterName:    cfg.MasterName,
+		SentinelAddrs: cfg.SentinelEndpoints,
+		Password:      cfg.Password,
+		DB:            cfg.Database,
+		PoolSize:      cfg.PoolSize,
 	})
 	return &RedisClient{client: client, prefix: prefix}
 }

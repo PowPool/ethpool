@@ -114,16 +114,27 @@ func decryptPoolConfigure(cfg *proxy.Config, passBytes []byte) error {
 		return err
 	}
 	cfg.UpstreamCoinBase = strings.ToLower(string(b))
+
 	// check address
 	if !IsValidHexAddress(cfg.UpstreamCoinBase) {
 		return errors.New("decryptPoolConfigure: IsValidHexAddress")
 	}
 
-	b, err = Ae64Decode(cfg.Redis.PasswordEncrypted, passBytes)
-	if err != nil {
-		return err
+	if cfg.Redis.Enabled {
+		b, err = Ae64Decode(cfg.Redis.PasswordEncrypted, passBytes)
+		if err != nil {
+			return err
+		}
+		cfg.Redis.Password = string(b)
 	}
-	cfg.Redis.Password = string(b)
+
+	if cfg.RedisFailover.Enabled {
+		b, err = Ae64Decode(cfg.RedisFailover.PasswordEncrypted, passBytes)
+		if err != nil {
+			return err
+		}
+		cfg.RedisFailover.Password = string(b)
+	}
 
 	return nil
 }
@@ -213,7 +224,18 @@ func main() {
 		Error.Fatal("Decrypt Pool Configure error: ", err.Error())
 	}
 
-	backend = storage.NewRedisClient(&cfg.Redis, cfg.Coin)
+	var backend *storage.RedisClient = nil
+
+	if cfg.Redis.Enabled {
+		backend = storage.NewRedisClient(&cfg.Redis, cfg.Coin)
+	} else if cfg.RedisFailover.Enabled {
+		backend = storage.NewRedisFailoverClient(&cfg.RedisFailover, cfg.Coin)
+	}
+
+	if backend == nil {
+		Info.Printf("Backend is Nil: maybe redis/redisFailover config is invalid")
+	}
+
 	pong, err := backend.Check()
 	if err != nil {
 		Error.Printf("Can't establish connection to backend: %v", err)

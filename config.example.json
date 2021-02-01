@@ -1,5 +1,5 @@
 {
-	"threads": 4,
+	"threads": 8,
 	"coin": "eth",
 
 	"log": {
@@ -18,6 +18,18 @@
 		{
 			"nodeName": "test-pool1",
 			"nodeIp": "192.168.1.124"
+		},
+		{
+			"nodeName": "pool100",
+			"nodeIp": "192.168.224.205"
+		},
+		{
+			"nodeName": "pool101",
+			"nodeIp": "192.168.224.215"
+		},
+		{
+			"nodeName": "pool102",
+			"nodeIp": "192.168.224.139"
 		}
 	],
 
@@ -37,17 +49,17 @@
 
 		"stratum": {
 			"enabled": true,
-			"listen": "0.0.0.0:8008",
+			"listen": "0.0.0.0:8018",
 			"timeout": "300s"
 		},
 
 		"stratumVIP": {
-			"enabled": true,
+			"enabled": false,
 			"portRange": "27000-27080",
 			"timeout": "300s"
 		},
 
-		"stratumMaxConn": 8192,
+		"stratumMaxConn": 16384,
 
 		"diffAdjust":{
 			"enabled": false,
@@ -95,21 +107,31 @@
 	"upstream": [
 		{
 			"name": "main",
-			"url": "http://172.24.146.34:12001",
+			"url": "http://192.168.224.194:12001",
 			"timeout": "10s"
 		},
 		{
 			"name": "backup",
-			"url": "http://172.24.146.35:12001",
+			"url": "http://192.168.224.86:12001",
 			"timeout": "10s"
 		}
 	],
 
 	"redis": {
+		"enabled": false,
 		"endpoint": "r-2vc5ktn9a57ddvvo6r.redis.cn-chengdu.rds.aliyuncs.com:6379",
 		"poolSize": 10,
 		"database": 0,
 		"passwordEncrypted": "QJ9FXhVKwayZqT+QyNoBZiKmT6cy9rJWanqoo6ib6K9skCWnWs9IwFQhi4cC6Gj5X+mCGRnzJT1GBbXdbqKS0g=="
+	},
+
+	"redisFailover": {
+		"enabled": true,
+		"masterName": "mymaster",
+		"sentinelEndpoints": ["192.168.224.205:26379", "192.168.224.215:26379", "192.168.224.139:26379"],
+		"poolSize": 10,
+		"database": 0,
+		"passwordEncrypted": "3YlSBHNaGs3erBovUWtC0wac5M8wiQrjDT0ig0viXxUrcRCC+KffitgLnaZcC6xE"
 	},
 
 	"unlocker": {
@@ -121,7 +143,7 @@
 		"immatureDepth": 20,
 		"keepTxFees": false,
 		"interval": "10m",
-		"daemon": "http://172.24.146.34:12001",
+		"daemon": "http://192.168.224.194:12001",
 		"timeout": "10s"
 	},
 
@@ -129,7 +151,7 @@
 		"enabled": false,
 		"requirePeers": 25,
 		"interval": "120m",
-		"daemon": "http://172.24.146.34:12001",
+		"daemon": "http://192.168.224.194:12001",
 		"timeout": "10s",
 		"address": "0x0",
 		"gas": "21000",
