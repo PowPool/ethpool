@@ -233,7 +233,7 @@ func main() {
 	}
 
 	if backend == nil {
-		Info.Printf("Backend is Nil: maybe redis/redisFailover config is invalid")
+		Error.Fatal("Backend is Nil: maybe redis/redisFailover config is invalid")
 	}
 
 	pong, err := backend.Check()
