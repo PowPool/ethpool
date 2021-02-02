@@ -35,7 +35,7 @@ var (
 )
 
 var cfg proxy.Config
-var backend *storage.RedisClient
+var backend *storage.RedisClient = nil
 
 func startProxy() {
 	s := proxy.NewProxy(&cfg, backend)
@@ -223,8 +223,6 @@ func main() {
 	if err != nil {
 		Error.Fatal("Decrypt Pool Configure error: ", err.Error())
 	}
-
-	var backend *storage.RedisClient = nil
 
 	if cfg.Redis.Enabled {
 		backend = storage.NewRedisClient(&cfg.Redis, cfg.Coin)
