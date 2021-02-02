@@ -131,7 +131,7 @@
 		"sentinelEndpoints": ["192.168.224.205:26379", "192.168.224.215:26379", "192.168.224.139:26379"],
 		"poolSize": 10,
 		"database": 0,
-		"passwordEncrypted": "3YlSBHNaGs3erBovUWtC0wac5M8wiQrjDT0ig0viXxUrcRCC+KffitgLnaZcC6xE"
+		"passwordEncrypted": "jxttPajkcRs/GktNtVpbjVhsVlRZxM/A4PvfaeC0XxL92X8ahYoyo9ArxieF6JjR"
 	},
 
 	"unlocker": {
