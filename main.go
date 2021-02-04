@@ -201,6 +201,9 @@ func main() {
 	bLogFile := "logs/block.log"
 	InitLog(iLogFile, eLogFile, sLogFile, bLogFile, cfg.Log.LogSetLevel)
 
+	// set rlimit nofile value
+	SetRLimit(100000)
+
 	err := initPeerName(&cfg)
 	if err != nil {
 		Error.Fatal("initPeerName error: ", err.Error())
