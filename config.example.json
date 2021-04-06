@@ -144,7 +144,11 @@
 		"keepTxFees": false,
 		"interval": "10m",
 		"daemon": "http://192.168.224.194:12001",
-		"timeout": "10s"
+		"timeout": "10s",
+		"syslog": {
+			"enabled": true,
+			"to": "47.100.83.94:5514"
+		}
 	},
 
 	"payouts": {
