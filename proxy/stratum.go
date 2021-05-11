@@ -74,13 +74,12 @@ func (s *ProxyServer) handleTCPClient(cs *Session) error {
 			s.policy.BanClient(cs.ip)
 			return err
 		} else if err == io.EOF {
-			Info.Printf("Client %s disconnected", cs.ip)
+			Info.Printf("Client disconnected: Address: [%s] | Name: [%s] | IP: [%s]", cs.login, cs.id, cs.ip)
 			s.removeSession(cs)
 			_ = cs.conn.Close()
 			break
 		} else if err != nil {
-			Error.Printf("Error reading from socket: %v", err)
-			Error.Printf("Address: [%s] | Name: [%s] | IP: [%s]", cs.login, cs.id, cs.ip)
+			Error.Printf("Error reading from socket: %v | Address: [%s] | Name: [%s] | IP: [%s]", err, cs.login, cs.id, cs.ip)
 			return err
 		}
 
