@@ -1,6 +1,7 @@
 package payouts
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -37,6 +38,7 @@ type UnlockerConfig struct {
 const minDepth = 16
 const byzantiumHardForkHeight = 4370000
 const istanbulHardForkHeight = 7080000
+const londonHardForkHeight = 12965000
 
 var homesteadReward = math.MustParseBig256("5000000000000000000")
 var byzantiumReward = math.MustParseBig256("3000000000000000000")
@@ -575,6 +577,12 @@ func getUncleReward(uHeight, height int64) *big.Int {
 func (u *BlockUnlocker) getExtraRewardForTx(block *rpc.GetBlockReply) (*big.Int, error) {
 	amount := new(big.Int)
 
+	blockHeight, err := strconv.ParseInt(strings.Replace(block.Number, "0x", "", -1), 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	baseFeePerGas := String2Big(block.BaseFeePerGas)
+
 	for _, tx := range block.Transactions {
 		receipt, err := u.rpc.GetTxReceipt(tx.Hash)
 		if err != nil {
@@ -583,6 +591,14 @@ func (u *BlockUnlocker) getExtraRewardForTx(block *rpc.GetBlockReply) (*big.Int,
 		if receipt != nil {
 			gasUsed := String2Big(receipt.GasUsed)
 			gasPrice := String2Big(tx.GasPrice)
+
+			if blockHeight >= londonHardForkHeight {
+				gasPrice = big.NewInt(0).Sub(gasPrice, baseFeePerGas)
+				if gasPrice.Cmp(big.NewInt(0)) <= 0 {
+					return nil, errors.New("gasPrice less than baseFeePerGas")
+				}
+			}
+
 			fee := new(big.Int).Mul(gasUsed, gasPrice)
 			amount.Add(amount, fee)
 		}
