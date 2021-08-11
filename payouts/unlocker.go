@@ -594,7 +594,7 @@ func (u *BlockUnlocker) getExtraRewardForTx(block *rpc.GetBlockReply) (*big.Int,
 
 			if blockHeight >= londonHardForkHeight {
 				gasPrice = big.NewInt(0).Sub(gasPrice, baseFeePerGas)
-				if gasPrice.Cmp(big.NewInt(0)) <= 0 {
+				if gasPrice.Cmp(big.NewInt(0)) < 0 {
 					return nil, errors.New("gasPrice less than baseFeePerGas")
 				}
 			}
