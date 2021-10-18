@@ -59,7 +59,7 @@
 			"timeout": "300s"
 		},
 
-		"tls:": {
+		"tls": {
 			"enabled": true,
 			"tlsCert": "certs/server.pem",
 			"tlsKey": "certs/server.key"
