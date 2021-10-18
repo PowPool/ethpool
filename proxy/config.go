@@ -52,7 +52,7 @@ type Proxy struct {
 
 	Stratum        Stratum    `json:"stratum"`
 	StratumVIP     StratumVIP `json:"stratumVIP"`
-	Tls            Tls        `json:"Tls"`
+	Tls            Tls        `json:"tls"`
 	StratumMaxConn int        `json:"stratumMaxConn"`
 
 	DiffAdjust DiffAdjust `json:"diffAdjust"`
