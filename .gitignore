@@ -9,3 +9,5 @@ testnet.json
 *.log
 ethpool
 ethpool.exe
+
+.idea
