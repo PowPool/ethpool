@@ -52,6 +52,7 @@ type Proxy struct {
 
 	Stratum        Stratum    `json:"stratum"`
 	StratumVIP     StratumVIP `json:"stratumVIP"`
+	Tls            Tls        `json:"Tls"`
 	StratumMaxConn int        `json:"stratumMaxConn"`
 
 	DiffAdjust DiffAdjust `json:"diffAdjust"`
@@ -67,6 +68,12 @@ type StratumVIP struct {
 	Enabled   bool   `json:"enabled"`
 	PortRange string `json:"portRange"`
 	Timeout   string `json:"timeout"`
+}
+
+type Tls struct {
+	Enabled   bool   `json:"enabled"`
+	TlsCert   string `json:"tlsCert"`
+	TlsKey    string `json:"tlsKey"`
 }
 
 type DiffAdjust struct {

@@ -2,6 +2,9 @@ package proxy
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"io"
@@ -62,6 +65,68 @@ func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string) {
 	}
 }
 
+func (s *ProxyServer) ListenTLS(listenEndPoint string, timeOutStr string, tlsCert string, tlsKey string) {
+	timeout := MustParseDuration(timeOutStr)
+	s.timeout = timeout
+
+	cert, err := tls.LoadX509KeyPair(tlsCert, tlsKey)
+	if err != nil {
+		Error.Fatalf("Error: %v", err)
+	}
+
+	tlsConfig := &tls.Config{}
+	tlsConfig.Certificates = []tls.Certificate{cert}
+	tlsConfig.Time = time.Now
+	tlsConfig.Rand = rand.Reader
+
+	server, err := tls.Listen("tcp", listenEndPoint, tlsConfig)
+	if err != nil {
+		Error.Fatalf("Error: %v", err)
+	}
+	defer server.Close()
+
+	Info.Printf("Stratum TLS listening on %s", listenEndPoint)
+
+	for {
+		conn, err := server.Accept()
+		if err != nil {
+			continue
+		}
+		Info.Printf("Accept Stratum TCP Connection from: %s, to: %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
+
+		ip, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
+
+		if s.policy.IsBanned(ip) || !s.policy.ApplyLimitPolicy(ip) {
+			_ = conn.Close()
+			continue
+		}
+
+		tlsConn, ok := conn.(*tls.Conn)
+		if ok {
+			state := tlsConn.ConnectionState()
+			for _, v := range state.PeerCertificates {
+				pKIXPublicKey, _ := x509.MarshalPKIXPublicKey(v.PublicKey)
+				Info.Printf("x509.MarshalPKIXPublicKey: %v", pKIXPublicKey)
+			}
+		} else {
+			_ = conn.Close()
+			continue
+		}
+
+		cs := &Session{tlsConn: tlsConn, ip: ip, shareCountInv: 0, lastLocalHRSubmitTime: 0}
+
+		s.stratumAcceptChan <- 0
+		go func(cs *Session) {
+			err = s.handleTLSClient(cs)
+			if err != nil {
+				s.removeSession(cs)
+				_ = conn.Close()
+			}
+			<-s.stratumAcceptChan
+		}(cs)
+	}
+}
+
 func (s *ProxyServer) handleTCPClient(cs *Session) error {
 	cs.enc = json.NewEncoder(cs.conn)
 	connBuf := bufio.NewReaderSize(cs.conn, MaxReqSize)
@@ -96,6 +161,50 @@ func (s *ProxyServer) handleTCPClient(cs *Session) error {
 			req.Worker = strings.Trim(req.Worker, " \t\r\n")
 
 			s.setDeadline(cs.conn)
+			err = cs.handleTCPMessage(s, &req)
+			if err != nil {
+				Error.Printf("handleTCPMessage: %v", err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *ProxyServer) handleTLSClient(cs *Session) error {
+	cs.enc = json.NewEncoder(cs.tlsConn)
+	connBuf := bufio.NewReaderSize(cs.tlsConn, MaxReqSize)
+	s.setTLSDeadline(cs.tlsConn)
+
+	for {
+		data, isPrefix, err := connBuf.ReadLine()
+		if isPrefix {
+			Error.Printf("Socket flood detected from %s", cs.ip)
+			s.policy.BanClient(cs.ip)
+			return err
+		} else if err == io.EOF {
+			Info.Printf("Client disconnected: Address: [%s] | Name: [%s] | IP: [%s]", cs.login, cs.id, cs.ip)
+			s.removeSession(cs)
+			_ = cs.tlsConn.Close()
+			break
+		} else if err != nil {
+			Error.Printf("Error reading from socket: %v | Address: [%s] | Name: [%s] | IP: [%s]", err, cs.login, cs.id, cs.ip)
+			return err
+		}
+
+		if len(data) > 1 {
+			var req StratumReq
+			err = json.Unmarshal(data, &req)
+			if err != nil {
+				s.policy.ApplyMalformedPolicy(cs.ip)
+				Error.Printf("handleTLSClient: Malformed stratum request from %s: %v", cs.ip, err)
+				return err
+			}
+
+			// trim space character for worker
+			req.Worker = strings.Trim(req.Worker, " \t\r\n")
+
+			s.setTLSDeadline(cs.tlsConn)
 			err = cs.handleTCPMessage(s, &req)
 			if err != nil {
 				Error.Printf("handleTCPMessage: %v", err)
@@ -190,6 +299,10 @@ func (s *ProxyServer) setDeadline(conn *net.TCPConn) {
 	_ = conn.SetDeadline(time.Now().Add(s.timeout))
 }
 
+func (s *ProxyServer) setTLSDeadline(tlsConn *tls.Conn) {
+	_ = tlsConn.SetDeadline(time.Now().Add(s.timeout))
+}
+
 func (s *ProxyServer) registerSession(cs *Session) {
 	s.sessionsMu.Lock()
 	defer s.sessionsMu.Unlock()
@@ -235,7 +348,11 @@ func (s *ProxyServer) broadcastNewJobs() {
 				Error.Printf("Job transmit error to %v@%v: %v", cs.login, cs.ip, err)
 				s.removeSession(cs)
 			} else {
-				s.setDeadline(cs.conn)
+				if s.config.Proxy.Tls.Enabled {
+					s.setTLSDeadline(cs.tlsConn)
+				} else {
+					s.setDeadline(cs.conn)
+				}
 			}
 		}(m)
 	}
