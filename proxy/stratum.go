@@ -92,7 +92,7 @@ func (s *ProxyServer) ListenTLS(listenEndPoint string, timeOutStr string, tlsCer
 		if err != nil {
 			continue
 		}
-		Info.Printf("Accept Stratum TCP Connection from: %s, to: %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
+		Info.Printf("Accept Stratum TLS Connection from: %s, to: %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
 
 		ip, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
