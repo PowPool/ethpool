@@ -202,7 +202,7 @@ func main() {
 	InitLog(iLogFile, eLogFile, sLogFile, bLogFile, cfg.Log.LogSetLevel)
 
 	// set rlimit nofile value
-	SetRLimit(100000)
+	SetRLimit(800000)
 
 	err := initPeerName(&cfg)
 	if err != nil {
