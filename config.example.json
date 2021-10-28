@@ -59,6 +59,12 @@
 			"timeout": "300s"
 		},
 
+		"tls": {
+			"enabled": true,
+			"tlsCert": "certs/server.pem",
+			"tlsKey": "certs/server.key"
+		},
+
 		"stratumMaxConn": 16384,
 
 		"diffAdjust":{
