@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -50,7 +49,7 @@ type Session struct {
 
 	// Stratum
 	sync.Mutex
-	conn  *net.TCPConn
+	conn *net.TCPConn
 
 	tlsConn *tls.Conn
 
@@ -82,48 +81,65 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 	}
 	Info.Printf("Default upstream: %s => %s", proxy.rpc().Name, proxy.rpc().Url)
 
-	if cfg.Proxy.Stratum.Enabled || cfg.Proxy.StratumVIP.Enabled {
+	// StratumVIP deprecated
+	//if cfg.Proxy.Stratum.Enabled || cfg.Proxy.StratumVIP.Enabled {
+	//	proxy.sessions = make(map[*Session]struct{})
+	//	proxy.sessionCaches = make(map[string]int64)
+	//	proxy.stratumAcceptChan = make(chan int, cfg.Proxy.StratumMaxConn)
+	//}
+
+	if cfg.Proxy.Stratum.Enabled || cfg.Proxy.StratumTls.Enabled {
 		proxy.sessions = make(map[*Session]struct{})
 		proxy.sessionCaches = make(map[string]int64)
 		proxy.stratumAcceptChan = make(chan int, cfg.Proxy.StratumMaxConn)
 	}
 
-	if cfg.Proxy.Stratum.Enabled {
-		if cfg.Proxy.Tls.Enabled {
-			go proxy.ListenTLS(cfg.Proxy.Stratum.Listen, cfg.Proxy.Stratum.Timeout,
-				cfg.Proxy.Tls.TlsCert, cfg.Proxy.Tls.TlsKey)
-		} else {
-			go proxy.ListenTCP(cfg.Proxy.Stratum.Listen, cfg.Proxy.Stratum.Timeout)
-		}
+	//if cfg.Proxy.Stratum.Enabled {
+	//	if cfg.Proxy.StratumTls.Enabled {
+	//		go proxy.ListenTLS(cfg.Proxy.StratumTls.Listen, cfg.Proxy.StratumTls.Timeout,
+	//			cfg.Proxy.StratumTls.TlsCert, cfg.Proxy.StratumTls.TlsKey)
+	//	} else {
+	//		go proxy.ListenTCP(cfg.Proxy.Stratum.Listen, cfg.Proxy.Stratum.Timeout)
+	//	}
+	//}
+
+	// StratumVIP deprecated
+	//if cfg.Proxy.StratumVIP.Enabled {
+	//	l := strings.Split(cfg.Proxy.StratumVIP.PortRange, "-")
+	//	if len(l) != 2 {
+	//		Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange")
+	//	}
+	//	startPort, err := strconv.Atoi(l[0])
+	//	if err != nil {
+	//		Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: startPort")
+	//	}
+	//	endPort, err := strconv.Atoi(l[1])
+	//	if err != nil {
+	//		Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: endPort")
+	//	}
+	//	if startPort > endPort {
+	//		Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: startPort > endPort")
+	//	}
+	//
+	//	for i := startPort; i <= endPort; i++ {
+	//		listenEndPoint := fmt.Sprintf("%s:%d", cfg.LocalIP, i)
+	//
+	//		if cfg.Proxy.StratumTls.Enabled {
+	//			go proxy.ListenTLS(listenEndPoint, cfg.Proxy.StratumVIP.Timeout,
+	//				cfg.Proxy.StratumTls.TlsCert, cfg.Proxy.StratumTls.TlsKey)
+	//		} else {
+	//			go proxy.ListenTCP(listenEndPoint, cfg.Proxy.StratumVIP.Timeout)
+	//		}
+	//	}
+	//}
+
+	if cfg.Proxy.StratumTls.Enabled {
+		go proxy.ListenTLS(cfg.Proxy.StratumTls.Listen, cfg.Proxy.StratumTls.Timeout,
+			cfg.Proxy.StratumTls.TlsCert, cfg.Proxy.StratumTls.TlsKey)
 	}
 
-	if cfg.Proxy.StratumVIP.Enabled {
-		l := strings.Split(cfg.Proxy.StratumVIP.PortRange, "-")
-		if len(l) != 2 {
-			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange")
-		}
-		startPort, err := strconv.Atoi(l[0])
-		if err != nil {
-			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: startPort")
-		}
-		endPort, err := strconv.Atoi(l[1])
-		if err != nil {
-			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: endPort")
-		}
-		if startPort > endPort {
-			Error.Fatal("Invalid config format: Proxy.StratumVIP.PortRange: startPort > endPort")
-		}
-
-		for i := startPort; i <= endPort; i++ {
-			listenEndPoint := fmt.Sprintf("%s:%d", cfg.LocalIP, i)
-
-			if cfg.Proxy.Tls.Enabled {
-				go proxy.ListenTLS(listenEndPoint, cfg.Proxy.StratumVIP.Timeout,
-					cfg.Proxy.Tls.TlsCert, cfg.Proxy.Tls.TlsKey)
-			} else {
-				go proxy.ListenTCP(listenEndPoint, cfg.Proxy.StratumVIP.Timeout)
-			}
-		}
+	if cfg.Proxy.Stratum.Enabled {
+		go proxy.ListenTCP(cfg.Proxy.Stratum.Listen, cfg.Proxy.Stratum.Timeout)
 	}
 
 	proxy.fetchBlockTemplate()
@@ -198,27 +214,37 @@ func NewProxy(cfg *Config, backend *storage.RedisClient) *ProxyServer {
 		}()
 	}
 
-	if cfg.Proxy.Tls.Enabled {
-		go func() {
-			for {
-				select {
-				case <-loginPortUpdateTimer.C:
-					proxy.UpdateAllTlsSessionCache()
-					loginPortUpdateTimer.Reset(loginPortUpdateIntv)
-				}
+	//if cfg.Proxy.StratumTls.Enabled {
+	//	go func() {
+	//		for {
+	//			select {
+	//			case <-loginPortUpdateTimer.C:
+	//				proxy.UpdateAllTlsSessionCache()
+	//				loginPortUpdateTimer.Reset(loginPortUpdateIntv)
+	//			}
+	//		}
+	//	}()
+	//} else {
+	//	go func() {
+	//		for {
+	//			select {
+	//			case <-loginPortUpdateTimer.C:
+	//				proxy.UpdateAllSessionCache()
+	//				loginPortUpdateTimer.Reset(loginPortUpdateIntv)
+	//			}
+	//		}
+	//	}()
+	//}
+
+	go func() {
+		for {
+			select {
+			case <-loginPortUpdateTimer.C:
+				proxy.UpdateAllSessionCache()
+				loginPortUpdateTimer.Reset(loginPortUpdateIntv)
 			}
-		}()
-	} else {
-		go func() {
-			for {
-				select {
-				case <-loginPortUpdateTimer.C:
-					proxy.UpdateAllSessionCache()
-					loginPortUpdateTimer.Reset(loginPortUpdateIntv)
-				}
-			}
-		}()
-	}
+		}
+	}()
 
 	return proxy
 }
@@ -337,16 +363,71 @@ func (s *ProxyServer) UpdateAllSessionDiff() {
 	}
 }
 
+//func (s *ProxyServer) UpdateAllSessionCache() {
+//	s.sessionsMu.Lock()
+//	defer s.sessionsMu.Unlock()
+//
+//	for k, _ := range s.sessions {
+//		if k.conn == nil {
+//			continue
+//		}
+//		login := k.login
+//		_, port, _ := net.SplitHostPort(k.conn.LocalAddr().String())
+//		cacheKey := strings.Join([]string{login, port}, ":")
+//		cacheValue, ok := s.sessionCaches[cacheKey]
+//		if ok && ((time.Now().Unix() - cacheValue) < 1800) {
+//			continue
+//		}
+//		s.sessionCaches[cacheKey] = time.Now().Unix()
+//		err := s.backend.WriteLoginPort(login, port)
+//		if err != nil {
+//			Warn.Println("Failed to insert LoginPort data into backend:", err)
+//			continue
+//		}
+//	}
+//	Info.Printf("UpdateAllSessionCache at %d", time.Now().Unix())
+//}
+//
+//func (s *ProxyServer) UpdateAllTlsSessionCache() {
+//	s.sessionsMu.Lock()
+//	defer s.sessionsMu.Unlock()
+//
+//	for k, _ := range s.sessions {
+//		if k.tlsConn == nil {
+//			continue
+//		}
+//		login := k.login
+//		_, port, _ := net.SplitHostPort(k.tlsConn.LocalAddr().String())
+//		cacheKey := strings.Join([]string{login, port}, ":")
+//		cacheValue, ok := s.sessionCaches[cacheKey]
+//		if ok && ((time.Now().Unix() - cacheValue) < 1800) {
+//			continue
+//		}
+//		s.sessionCaches[cacheKey] = time.Now().Unix()
+//		err := s.backend.WriteLoginPort(login, port)
+//		if err != nil {
+//			Warn.Println("Failed to insert LoginPort data into backend:", err)
+//			continue
+//		}
+//	}
+//	Info.Printf("UpdateAllTlsSessionCache at %d", time.Now().Unix())
+//}
+
 func (s *ProxyServer) UpdateAllSessionCache() {
 	s.sessionsMu.Lock()
 	defer s.sessionsMu.Unlock()
 
+	addrStr := ""
 	for k, _ := range s.sessions {
-		if k.conn == nil {
+		if k.conn != nil {
+			addrStr = k.conn.LocalAddr().String()
+		} else if k.tlsConn != nil {
+			addrStr = k.tlsConn.LocalAddr().String()
+		} else {
 			continue
 		}
 		login := k.login
-		_, port, _ := net.SplitHostPort(k.conn.LocalAddr().String())
+		_, port, _ := net.SplitHostPort(addrStr)
 		cacheKey := strings.Join([]string{login, port}, ":")
 		cacheValue, ok := s.sessionCaches[cacheKey]
 		if ok && ((time.Now().Unix() - cacheValue) < 1800) {
@@ -360,31 +441,6 @@ func (s *ProxyServer) UpdateAllSessionCache() {
 		}
 	}
 	Info.Printf("UpdateAllSessionCache at %d", time.Now().Unix())
-}
-
-func (s *ProxyServer) UpdateAllTlsSessionCache() {
-	s.sessionsMu.Lock()
-	defer s.sessionsMu.Unlock()
-
-	for k, _ := range s.sessions {
-		if k.tlsConn == nil {
-			continue
-		}
-		login := k.login
-		_, port, _ := net.SplitHostPort(k.tlsConn.LocalAddr().String())
-		cacheKey := strings.Join([]string{login, port}, ":")
-		cacheValue, ok := s.sessionCaches[cacheKey]
-		if ok && ((time.Now().Unix() - cacheValue) < 1800) {
-			continue
-		}
-		s.sessionCaches[cacheKey] = time.Now().Unix()
-		err := s.backend.WriteLoginPort(login, port)
-		if err != nil {
-			Warn.Println("Failed to insert LoginPort data into backend:", err)
-			continue
-		}
-	}
-	Info.Printf("UpdateAllTlsSessionCache at %d", time.Now().Unix())
 }
 
 func (s *ProxyServer) remoteAddr(r *http.Request) string {

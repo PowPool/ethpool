@@ -59,8 +59,10 @@
 			"timeout": "300s"
 		},
 
-		"tls": {
+		"stratumTls": {
 			"enabled": true,
+			"listen": "0.0.0.0:18018",
+			"timeout": "300s",
 			"tlsCert": "certs/server.pem",
 			"tlsKey": "certs/server.key"
 		},

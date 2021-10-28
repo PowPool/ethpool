@@ -51,7 +51,7 @@ func (s *ProxyServer) ListenTCP(listenEndPoint string, timeOutStr string) {
 			continue
 		}
 
-		cs := &Session{conn: conn, ip: ip, shareCountInv: 0, lastLocalHRSubmitTime: 0}
+		cs := &Session{conn: conn, tlsConn: nil, ip: ip, shareCountInv: 0, lastLocalHRSubmitTime: 0}
 
 		s.stratumAcceptChan <- 0
 		go func(cs *Session) {
@@ -113,7 +113,7 @@ func (s *ProxyServer) ListenTLS(listenEndPoint string, timeOutStr string, tlsCer
 			continue
 		}
 
-		cs := &Session{tlsConn: tlsConn, ip: ip, shareCountInv: 0, lastLocalHRSubmitTime: 0}
+		cs := &Session{tlsConn: tlsConn, conn: nil, ip: ip, shareCountInv: 0, lastLocalHRSubmitTime: 0}
 
 		s.stratumAcceptChan <- 0
 		go func(cs *Session) {
@@ -130,7 +130,8 @@ func (s *ProxyServer) ListenTLS(listenEndPoint string, timeOutStr string, tlsCer
 func (s *ProxyServer) handleTCPClient(cs *Session) error {
 	cs.enc = json.NewEncoder(cs.conn)
 	connBuf := bufio.NewReaderSize(cs.conn, MaxReqSize)
-	s.setDeadline(cs.conn)
+	//s.setDeadline(cs.conn)
+	s.setDeadline(cs)
 
 	for {
 		data, isPrefix, err := connBuf.ReadLine()
@@ -160,7 +161,8 @@ func (s *ProxyServer) handleTCPClient(cs *Session) error {
 			// trim space character for worker
 			req.Worker = strings.Trim(req.Worker, " \t\r\n")
 
-			s.setDeadline(cs.conn)
+			//s.setDeadline(cs.conn)
+			s.setDeadline(cs)
 			err = cs.handleTCPMessage(s, &req)
 			if err != nil {
 				Error.Printf("handleTCPMessage: %v", err)
@@ -174,7 +176,8 @@ func (s *ProxyServer) handleTCPClient(cs *Session) error {
 func (s *ProxyServer) handleTLSClient(cs *Session) error {
 	cs.enc = json.NewEncoder(cs.tlsConn)
 	connBuf := bufio.NewReaderSize(cs.tlsConn, MaxReqSize)
-	s.setTLSDeadline(cs.tlsConn)
+	//s.setTLSDeadline(cs.tlsConn)
+	s.setDeadline(cs)
 
 	for {
 		data, isPrefix, err := connBuf.ReadLine()
@@ -204,7 +207,8 @@ func (s *ProxyServer) handleTLSClient(cs *Session) error {
 			// trim space character for worker
 			req.Worker = strings.Trim(req.Worker, " \t\r\n")
 
-			s.setTLSDeadline(cs.tlsConn)
+			//s.setTLSDeadline(cs.tlsConn)
+			s.setDeadline(cs)
 			err = cs.handleTCPMessage(s, &req)
 			if err != nil {
 				Error.Printf("handleTCPMessage: %v", err)
@@ -295,12 +299,21 @@ func (cs *Session) sendTCPError(id json.RawMessage, reply *ErrorReply) error {
 	return errors.New(reply.Message)
 }
 
-func (s *ProxyServer) setDeadline(conn *net.TCPConn) {
-	_ = conn.SetDeadline(time.Now().Add(s.timeout))
-}
+//func (s *ProxyServer) setDeadline(conn *net.TCPConn) {
+//	_ = conn.SetDeadline(time.Now().Add(s.timeout))
+//}
+//
+//func (s *ProxyServer) setTLSDeadline(tlsConn *tls.Conn) {
+//	_ = tlsConn.SetDeadline(time.Now().Add(s.timeout))
+//}
 
-func (s *ProxyServer) setTLSDeadline(tlsConn *tls.Conn) {
-	_ = tlsConn.SetDeadline(time.Now().Add(s.timeout))
+func (s *ProxyServer) setDeadline(cs *Session) {
+	if cs.conn != nil {
+		_ = cs.conn.SetDeadline(time.Now().Add(s.timeout))
+	}
+	if cs.tlsConn != nil {
+		_ = cs.tlsConn.SetDeadline(time.Now().Add(s.timeout))
+	}
 }
 
 func (s *ProxyServer) registerSession(cs *Session) {
@@ -348,11 +361,13 @@ func (s *ProxyServer) broadcastNewJobs() {
 				Error.Printf("Job transmit error to %v@%v: %v", cs.login, cs.ip, err)
 				s.removeSession(cs)
 			} else {
-				if s.config.Proxy.Tls.Enabled {
-					s.setTLSDeadline(cs.tlsConn)
-				} else {
-					s.setDeadline(cs.conn)
-				}
+				//if s.config.Proxy.StratumTls.Enabled {
+				//	s.setTLSDeadline(cs.tlsConn)
+				//} else {
+				//	s.setDeadline(cs.conn)
+				//}
+
+				s.setDeadline(cs)
 			}
 		}(m)
 	}

@@ -91,7 +91,7 @@ func (s *ProxyServer) fetchBlockTemplate() {
 	Info.Printf("NEW pending block on %s at height %d / %s", rpcClient.Name, height, workInfo[0][0:10])
 
 	// Stratum
-	if s.config.Proxy.Stratum.Enabled {
+	if s.config.Proxy.Stratum.Enabled || s.config.Proxy.StratumTls.Enabled {
 		go s.broadcastNewJobs()
 	}
 }
