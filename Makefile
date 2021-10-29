@@ -8,12 +8,15 @@ LATEST_TAG_COMMIT_SHA1   := $(shell git rev-list --tags --max-count=1 )
 LATEST_COMMIT_SHA1     := $(shell git rev-parse HEAD )
 BUILD_TIME      := $(shell date "+%F %T" )
 
+.PHONY: all release debug clean
 
-.PHONY: all clean
+all: release
 
+release:
+	go build -ldflags '-w -s -X "main.LatestTag=${LATEST_TAG}" -X "main.LatestTagCommitSHA1=${LATEST_TAG_COMMIT_SHA1}" -X "main.LatestCommitSHA1=${LATEST_COMMIT_SHA1}" -X "main.BuildTime=${BUILD_TIME}" -X "main.ReleaseType=release"'
 
-all:
-	go build -ldflags '-X "main.LatestTag=${LATEST_TAG}" -X "main.LatestTagCommitSHA1=${LATEST_TAG_COMMIT_SHA1}" -X "main.LatestCommitSHA1=${LATEST_COMMIT_SHA1}" -X "main.BuildTime=${BUILD_TIME}"'
+debug:
+	go build -ldflags '-X "main.LatestTag=${LATEST_TAG}" -X "main.LatestTagCommitSHA1=${LATEST_TAG_COMMIT_SHA1}" -X "main.LatestCommitSHA1=${LATEST_COMMIT_SHA1}" -X "main.BuildTime=${BUILD_TIME}" -X "main.ReleaseType=debug"'
 
 clean:
 	rm -rf ethpool

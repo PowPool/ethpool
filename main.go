@@ -32,6 +32,7 @@ var (
 	LatestTagCommitSHA1 = ""
 	LatestCommitSHA1    = ""
 	BuildTime           = ""
+	ReleaseType         = ""
 )
 
 var cfg proxy.Config
@@ -184,6 +185,7 @@ func OptionParse() {
 		fmt.Printf("Latest Tag Commit SHA1: %s\n", LatestTagCommitSHA1)
 		fmt.Printf("Latest Commit SHA1: %s\n", LatestCommitSHA1)
 		fmt.Printf("Build Time: %s\n", BuildTime)
+		fmt.Printf("Release Type: %s\n", ReleaseType)
 		os.Exit(0)
 	}
 }
