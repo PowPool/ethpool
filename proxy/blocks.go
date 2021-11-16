@@ -12,7 +12,7 @@ import (
 	. "github.com/MiningPool0826/ethpool/util"
 )
 
-const maxBacklog = 3
+const maxBacklog = 6
 
 type heightDiffPair struct {
 	diff   *big.Int
