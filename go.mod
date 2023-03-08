@@ -7,7 +7,7 @@ require (
 	github.com/garyburd/redigo v1.6.2 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/mutalisk999/ethash v0.0.0-20200831042312-1388d394c50d
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/crypto v0.1.0
 	gopkg.in/bsm/ratelimit.v1 v1.0.0-20160220154919-db14e161995a // indirect
 	gopkg.in/redis.v3 v3.6.4
 )
