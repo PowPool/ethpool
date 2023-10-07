@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	. "github.com/MiningPool0826/ethpool/util"
+	. "github.com/PowPool/ethpool/util"
 )
 
 type RPCClient struct {

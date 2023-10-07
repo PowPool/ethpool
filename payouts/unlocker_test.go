@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MiningPool0826/ethpool/rpc"
-	"github.com/MiningPool0826/ethpool/storage"
+	"github.com/PowPool/ethpool/rpc"
+	"github.com/PowPool/ethpool/storage"
 )
 
 func TestMain(m *testing.M) {

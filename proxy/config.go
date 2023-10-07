@@ -1,10 +1,10 @@
 package proxy
 
 import (
-	"github.com/MiningPool0826/ethpool/api"
-	"github.com/MiningPool0826/ethpool/payouts"
-	"github.com/MiningPool0826/ethpool/policy"
-	"github.com/MiningPool0826/ethpool/storage"
+	"github.com/PowPool/ethpool/api"
+	"github.com/PowPool/ethpool/payouts"
+	"github.com/PowPool/ethpool/policy"
+	"github.com/PowPool/ethpool/storage"
 )
 
 type Config struct {

@@ -1,6 +1,6 @@
-module github.com/MiningPool0826/ethpool
+module github.com/PowPool/ethpool
 
-go 1.14
+go 1.19
 
 require (
 	github.com/ethereum/go-ethereum v1.12.1

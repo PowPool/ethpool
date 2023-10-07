@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/MiningPool0826/ethpool/storage"
-	. "github.com/MiningPool0826/ethpool/util"
+	"github.com/PowPool/ethpool/storage"
+	. "github.com/PowPool/ethpool/util"
 )
 
 type Config struct {

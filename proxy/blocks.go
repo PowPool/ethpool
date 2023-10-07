@@ -8,8 +8,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/MiningPool0826/ethpool/rpc"
-	. "github.com/MiningPool0826/ethpool/util"
+	"github.com/PowPool/ethpool/rpc"
+	. "github.com/PowPool/ethpool/util"
 )
 
 const maxBacklog = 6

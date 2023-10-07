@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/MiningPool0826/ethpool/util"
+	. "github.com/PowPool/ethpool/util"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/mutalisk999/ethash"
 )

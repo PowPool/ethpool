@@ -19,11 +19,11 @@ import (
 	"time"
 	//"github.com/yvasiyarov/gorelic"
 
-	"github.com/MiningPool0826/ethpool/api"
-	"github.com/MiningPool0826/ethpool/payouts"
-	"github.com/MiningPool0826/ethpool/proxy"
-	"github.com/MiningPool0826/ethpool/storage"
-	. "github.com/MiningPool0826/ethpool/util"
+	"github.com/PowPool/ethpool/api"
+	"github.com/PowPool/ethpool/payouts"
+	"github.com/PowPool/ethpool/proxy"
+	"github.com/PowPool/ethpool/storage"
+	. "github.com/PowPool/ethpool/util"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
